@@ -115,20 +115,20 @@ class SemanticCloud:
         if self.point_type is not PointType.COLOR:
             # Taken from my version
             # TODO convert this to use ros parameter server
-            config_path = os.path.join(
-                os.path.dirname(__file__), "..", "cfg", "config.json"
-            )
+            # config_path = os.path.join(
+            #    os.path.dirname(__file__), "..", "cfg", "config.json"
+            # )
 
-            with open(config_path) as infile_h:
-                self.cfg = json.load(infile_h)
+            # with open(config_path) as infile_h:
+            #    self.cfg = json.load(infile_h)
 
-            self.publish_vis = self.cfg["publish_vis"]
+            # self.publish_vis = rospy.get_param("publish_vis")
 
-            config_path = self.cfg["config_path"]
-            checkpoint_path = self.cfg["checkpoint_path"]
-            device = self.cfg["device"]
+            model_path = rospy.get_param("/semantic_pcl/model_path")
+            config_path = rospy.get_param("/semantic_pcl/config_path")
+            device = rospy.get_param("/device")
             print("Setting up CNN model...")
-            self.model = init_segmentor(config_path, checkpoint_path, device=device)
+            self.model = init_segmentor(config_path, model_path, device=device)
             # End my version
 
         # Declare array containers
@@ -158,6 +158,9 @@ class SemanticCloud:
             fy = rospy.get_param("/camera/fy")
             cx = rospy.get_param("/camera/cx")
             cy = rospy.get_param("/camera/cy")
+            # TODO get the extrinsics
+            # asf
+
             intrinsic = np.matrix(
                 [[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32
             )
@@ -180,9 +183,10 @@ class SemanticCloud:
                 [self.color_sub, self.depth_sub], queue_size=1, slop=0.3
             )  # Take in one color image and one depth image with a limite time gap between message time stamps
             self.ts.registerCallback(self.color_depth_callback)
-            self.cloud_generator = ColorPclGenerator(
-                intrinsic, self.img_width, self.img_height, frame_id, self.point_type
-            )
+            # TODO Consider if something alterative to this needs to be added
+            # self.cloud_generator = ColorPclGenerator(
+            #    intrinsic, self.img_width, self.img_height, frame_id, self.point_type
+            # )
         else:
             self.image_sub = rospy.Subscriber(
                 rospy.get_param("/semantic_pcl/color_image_topic"),
