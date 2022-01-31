@@ -10,6 +10,10 @@ Semantic octomap             |  RGB octomap
 ![alt text](docs/images/max.png)  | ![alt text](docs/images/rgb.png)
 
 
+### Modifications (David Russell)
+`semantic_cloud/include/color_pcl_generator/color_pcl_generator.py` now optionally takes in a point cloud and textures it.
+
+
 ### Project Report & Demo:
 
 - Demo: [[Youtube](https://youtu.be/IwQaRnFmRuU)] [[Youku](http://player.youku.com/embed/XMzc5NTI0OTcyNA==)]
