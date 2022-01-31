@@ -115,15 +115,16 @@ class ColorPclGenerator:
         # self.XYZ_vect = np.zeros([width * height, 3], dtype="<f4")  # real world coord
 
         # I think the last element here is actually a zero to keep it aligned properly
-        self.bgr0_vect = np.zeros([width * height, 4], dtype="<u1")  # bgr0
-        self.semantic_color_vect = np.zeros([width * height, 4], dtype="<u1")  # bgr0
+        self.bgr0_vect = None  # np.zeros([width * height, 4], dtype="<u1")  # bgr0
+
         # TODO figure out what these semantic colors are and if they're needed
-        self.semantic_colors_vect = np.zeros(
-            [width * height, 4 * self.num_semantic_colors], dtype="<u1"
-        )  # bgr0bgr0bgr0 ...
-        self.confidences_vect = np.zeros(
-            [width * height, self.num_semantic_colors], dtype="<f4"
-        )  # class confidences
+        # TODO Figure out why this is
+        self.semantic_color_vect = None  # np.zeros
+        #    [width * height, 6 * self.num_semantic_colors], dtype="<u1"
+        # )  # bgr0bgr0bgr0 ...
+        self.confidences_vect = None  # np.zeros(
+        #    [width * height, self.num_semantic_colors], dtype="<f5"
+        # )  # class confidences
         # Prepare ros cloud msg
         # Cloud data is serialized into a contiguous buffer, set fields to specify offsets in buffer
         self.cloud_ros = PointCloud2()
@@ -245,14 +246,14 @@ class ColorPclGenerator:
         projections_inhomog = projections_homog[:2] / projections_homog[2]
 
         # TODO consider using the shape from the current image
-        image_points, within_bounds = filter_points_to_image_extent(
+        self.image_points, within_bounds = filter_points_to_image_extent(
             projections_inhomog, (self.img_width, self.img_height)
         )
 
         # TODO remember that we actually need to keep track of which points we used
-        sampled_colors = sample_points(bgr_img, image_points)
+        sampled_colors = sample_points(bgr_img, self.image_points)
 
-        self.cloud_ros.width = image_points.shape[1]
+        self.cloud_ros.width = self.image_points.shape[1]
 
         # TODO figure out if these need to be set
         # self.xyd_vect[:, 0:2] = None  # self.xy_index * depth_img.reshape(-1, 1)
@@ -352,18 +353,38 @@ class ColorPclGenerator:
     def generate_cloud_semantic_max_img(
         self, bgr_img, three_d_data, semantic_color, confidence, stamp, is_lidar=True
     ):
+        """ Produce a max confidence image
+
+        inputs:
+            semantic_color:
+                Probably the indices, I don't really know
+        """
         if is_lidar:
             self.generate_cloud_data_common_lidar(bgr_img, three_d_data)
         else:
             self.generate_cloud_data_common_img(bgr_img, three_d_data)
 
         # Transform semantic color
-        self.semantic_color_vect[:, 0:1] = semantic_color[:, :, 0].reshape(-1, 1)
-        self.semantic_color_vect[:, 1:2] = semantic_color[:, :, 1].reshape(-1, 1)
-        self.semantic_color_vect[:, 2:3] = semantic_color[:, :, 2].reshape(-1, 1)
+        self.semantic_color_vect = sample_points(
+            semantic_color, self.image_points
+        ).astype("<u1")
+
+        # self.semantic_color_vect = np.concatenate(
+        #    (
+        #        self.semantic_color_vect,
+        #        np.zeros((self.semantic_color_vect.shape[0], 1), dtype="<u1"),
+        #    ),
+        #    axis=1,
+        # )
+
+        confidence = sample_points(confidence, self.image_points)
+
+        # confidence = np.concatenate((confidence,
+
         # Concatenate data
-        self.ros_data[:, 5:6] = self.semantic_color_vect.view("<f4")
-        self.ros_data[:, 6:7] = confidence.reshape(-1, 1)
+        self.ros_data[:, 5] = self.semantic_color_vect[:, 1]
+        # TODO fix this, I don't think it's what it's supposed to be
+        self.ros_data[:, 6] = confidence[:, 1]
         return self.make_ros_cloud(stamp)
 
     def generate_cloud_semantic_bayesian_img(
@@ -413,7 +434,7 @@ if __name__ == "__main__":
 
     # Init ros
     rospy.init_node("pcl_test", anonymous=True)
-    pcl_pub = rospy.Publisher("pcl_test", PointCloud2, queue_size=1)
+    pcl_pub = rospy.Publisher("/semantic_pcl/semantic_pcl", PointCloud2, queue_size=1)
     # Read test images
     color_img = io.imread(Path(__file__, "../../../pcl_test/color_image.png"))
     depth_img = io.imread(Path(__file__, "../../../pcl_test/depth_image.tiff"))
@@ -433,15 +454,37 @@ if __name__ == "__main__":
     intrinsic = np.matrix([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32)
     print("intrinsic matrix", intrinsic)
 
-    cloud_gen = ColorPclGenerator(intrinsic, color_img.shape[1], color_img.shape[0])
+    cloud_gen = ColorPclGenerator(
+        intrinsic,
+        color_img.shape[1],
+        color_img.shape[0],
+        point_type=PointType.SEMANTICS_MAX,
+    )
     # Generate point cloud and pulish ros message
     while not rospy.is_shutdown():
         lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
         since = time.time()
         stamp = rospy.Time.now()
 
-        cloud_ros = cloud_gen.generate_cloud_color(
-            color_img, lidar_points, stamp, is_lidar=True
+        # def generate_cloud_semantic_max_img(
+        #    self, bgr_img, three_d_data, semantic_color, confidence, stamp, is_lidar=True
+        # ):
+        semantic_color = [
+            (x * np.ones_like(color_img[..., 2])).astype(np.uint8) for x in (0, 1, 2)
+        ]
+        semantic_color = np.stack(semantic_color, axis=2)
+        confidences = [
+            (x * np.ones_like(color_img[..., 1])).astype(float) for x in (0.9, 0.7, 0.5)
+        ]
+        confidences = np.stack(confidences, axis=2)
+
+        cloud_ros = cloud_gen.generate_cloud_semantic_max_img(
+            color_img,
+            lidar_points,
+            semantic_color=semantic_color,
+            confidence=confidences,
+            stamp=stamp,
+            is_lidar=True,
         )
         pcl_pub.publish(cloud_ros)
         print("Generate and publish pcl took", time.time() - since)
