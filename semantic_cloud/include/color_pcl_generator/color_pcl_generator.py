@@ -1,11 +1,15 @@
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
+
 from email.mime import image
-import rospy
-import cv2
-import numpy as np
-from sensor_msgs.msg import PointCloud2, PointField
 from enum import Enum
+from pathlib import Path
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import rospy
+from mpl_toolkits.mplot3d import Axes3D
+from sensor_msgs.msg import PointCloud2, PointField
 
 # import time
 
@@ -37,16 +41,17 @@ def filter_points_to_image_extent(points, img_size, offset=0.5, return_indices=T
         np.array:
             Valid points after filtering. (2, n).
     """
+
     img_size_x, img_size_y = img_size
-    inside = np.logical_and(
+    inside = np.logical_and.reduce(
         (
             points[0] > (-offset),
             points[1] > (-offset),
             points[0] < (img_size_x - offset),
             points[1] < (img_size_y - offset),
         )
-    )
-    points_inside = points[inside]
+    )[0]
+    points_inside = points[:, inside]
 
     if return_indices:
         return points_inside, inside
@@ -68,10 +73,10 @@ def sample_points(img, img_points):
         Sampled points concatenated vertically
     """
     # Force non-int points to be ints
-    if issubclass(img_points.dtype, np.floating):
+    if issubclass(img_points.dtype.type, np.floating):
         img_points = np.round(img_points).astype(np.uint16)
 
-    sampled_values = img[img_points[1], img_points[0]]
+    sampled_values = img[img_points[1], img_points[0]][0]
     return sampled_values
 
 
@@ -108,15 +113,7 @@ class ColorPclGenerator:
         # self.xy_index = np.vstack((x_index, y_index)).T  # x,y
         # self.xyd_vect = np.zeros([width * height, 3], dtype="<f4")  # x,y,depth
         # self.XYZ_vect = np.zeros([width * height, 3], dtype="<f4")  # real world coord
-        if self.point_type is PointType.SEMANTICS_BAYESIAN:
-            # Why is this ones and not zeros?
-            self.ros_data = np.ones(
-                [width * height, 16], dtype="<f4"
-            )  # [x,y,z,0,bgr0,0,0,0,color0,color1,color2,0,confidence0,confidence1,confidence2,0]
-        else:
-            self.ros_data = np.ones(
-                [width * height, 8], dtype="<f4"
-            )  # [x,y,z,0,bgr0,0,0,0] or [x,y,z,0,bgr0,semantics,confidence,0]
+
         # I think the last element here is actually a zero to keep it aligned properly
         self.bgr0_vect = np.zeros([width * height, 4], dtype="<u1")  # bgr0
         self.semantic_color_vect = np.zeros([width * height, 4], dtype="<u1")  # bgr0
@@ -221,7 +218,7 @@ class ColorPclGenerator:
         Create a 
 
         bgr_img:
-            (numpy array bgr8)
+            (numpy array bgr8). (h, w, 3)
         lidar:
             np.array float32 (n, 3). 3D lidar points in the local frame
         extrinsics:
@@ -258,22 +255,54 @@ class ColorPclGenerator:
         self.cloud_ros.width = image_points.shape[1]
 
         # TODO figure out if these need to be set
-        self.xyd_vect[:, 0:2] = self.xy_index * depth_img.reshape(-1, 1)
-        self.xyd_vect[:, 2:3] = depth_img.reshape(-1, 1)
+        # self.xyd_vect[:, 0:2] = None  # self.xy_index * depth_img.reshape(-1, 1)
+        # self.xyd_vect[:, 2:3] = None  # depth_img.reshape(-1, 1)
 
         # TODO make sure this is actually supposed to be in the camera frame
-        in_front_XYZ = lidar_transformed[in_front_of_camera]
+        in_front_XYZ = lidar_transformed[:, in_front_of_camera]
         # Transpose to get it to be (n, 3)
-        self.XYZ_vect = in_front_XYZ[within_bounds].T
+        self.XYZ_vect = in_front_XYZ[:, within_bounds].T
+
+        num_points = sampled_colors.shape[0]
 
         # Convert to ROS point cloud message in a vectorialized manner
         # ros msg data: [x,y,z,0,bgr0,0,0,0,color0,color1,color2,0,confidence0,confidence1,confidenc2,0] (little endian float32)
         # Transform color
         # This should just be a one-liner
-        self.bgr0_vect[:, :3] = sampled_colors
+        # TODO figure out what type this should be
+        # It's currently float64
+
+        self.bgr0_vect = np.concatenate(
+            (sampled_colors, np.zeros((num_points, 1), dtype=np.uint8)),
+            axis=1,
+            dtype=np.uint8,
+        )
+
+        if self.point_type is PointType.SEMANTICS_BAYESIAN:
+            # Why is this ones and not zeros?
+            self.ros_data = np.ones(
+                (num_points, 16), dtype="<f4"
+            )  # [x,y,z,0,bgr0,0,0,0,color0,color1,color2,0,confidence0,confidence1,confidence2,0]
+        else:
+            self.ros_data = np.ones(
+                (num_points, 8), dtype="<f4"
+            )  # [x,y,z,0,bgr0,0,0,0] or [x,y,z,0,bgr0,semantics,confidence,0]
+
         # Concatenate data
         self.ros_data[:, 0:3] = self.XYZ_vect
         self.ros_data[:, 4:5] = self.bgr0_vect.view("<f4")
+
+        # self.show_point_cloud()
+
+    def show_point_cloud(self):
+        # 3D Plot
+        fig = plt.figure()
+        ax3D = fig.add_subplot(111, projection="3d")
+        # Scale and convert BGR->RGB
+        col = np.flip(self.bgr0_vect[:, :3] / 255.0, axis=1)
+        x, y, z = self.XYZ_vect.T
+        ax3D.scatter(x, y, z, s=10, c=col, marker="o")
+        plt.show()
 
     def generate_cloud_data_common_img(self, bgr_img, depth_img):
         """
@@ -301,11 +330,11 @@ class ColorPclGenerator:
     def make_ros_cloud(self, stamp):
         # Assign data to ros msg
         # We should send directly in bytes, send in as a list is too slow, numpy tobytes is too slow, takes 0.3s.
-        self.cloud_ros.data = np.getbuffer(self.ros_data.ravel())[:]
+        self.cloud_ros.data = self.ros_data.ravel().tobytes()
         self.cloud_ros.header.stamp = stamp
         return self.cloud_ros
 
-    def generate_cloud_color_img(self, bgr_img, three_d_data, stamp, is_lidar=True):
+    def generate_cloud_color(self, bgr_img, three_d_data, stamp, is_lidar=True):
         """
         Generate color point cloud
         \param bgr_img (numpy array bgr8) input color image
@@ -377,24 +406,25 @@ class ColorPclGenerator:
 
 # Test
 if __name__ == "__main__":
+    import time
+
     from matplotlib import pyplot as plt
     from skimage import io
-    import time
 
     # Init ros
     rospy.init_node("pcl_test", anonymous=True)
     pcl_pub = rospy.Publisher("pcl_test", PointCloud2, queue_size=1)
     # Read test images
-    color_img = io.imread("../../pcl_test/color_image.png")
-    depth_img = io.imread("../../pcl_test/depth_image.tiff")
-    # Show test input images
-    plt.ion()
-    plt.show()
-    plt.subplot(1, 2, 1), plt.imshow(color_img[:, :, ::-1]), plt.title("color")
-    plt.subplot(1, 2, 2), plt.imshow(depth_img), plt.title("depth")
-    plt.draw()
+    color_img = io.imread(Path(__file__, "../../../pcl_test/color_image.png"))
+    depth_img = io.imread(Path(__file__, "../../../pcl_test/depth_image.tiff"))
 
-    cloud_gen = ColorPclGenerator(color_img.shape[1], color_img.shape[0])
+    # Show test input images
+    # plt.ion()
+    # plt.show()
+    # plt.subplot(1, 2, 1), plt.imshow(color_img[:, :, ::-1]), plt.title("color")
+    # plt.subplot(1, 2, 2), plt.imshow(depth_img), plt.title("depth")
+    # plt.draw()
+
     # Camera intrinsic matrix
     fx = 544.771755
     fy = 546.966312
@@ -402,10 +432,17 @@ if __name__ == "__main__":
     cy = 245.357925
     intrinsic = np.matrix([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32)
     print("intrinsic matrix", intrinsic)
+
+    cloud_gen = ColorPclGenerator(intrinsic, color_img.shape[1], color_img.shape[0])
     # Generate point cloud and pulish ros message
     while not rospy.is_shutdown():
+        lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
         since = time.time()
-        cloud_ros = cloud_gen.generate_cloud(color_img, depth_img, intrinsic)
+        stamp = rospy.Time.now()
+
+        cloud_ros = cloud_gen.generate_cloud_color(
+            color_img, lidar_points, stamp, is_lidar=True
+        )
         pcl_pub.publish(cloud_ros)
         print("Generate and publish pcl took", time.time() - since)
     rospy.spin()
