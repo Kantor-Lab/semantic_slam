@@ -357,7 +357,10 @@ class ColorPclGenerator:
 
         inputs:
             semantic_color:
-                Probably the indices, I don't really know
+                (h, w, 3) image representing the colors of the classes
+            confidence: np.array
+                (w, h) confidence of the max class
+
         """
         if is_lidar:
             self.generate_cloud_data_common_lidar(bgr_img, three_d_data)
@@ -369,22 +372,22 @@ class ColorPclGenerator:
             semantic_color, self.image_points
         ).astype("<u1")
 
-        # self.semantic_color_vect = np.concatenate(
-        #    (
-        #        self.semantic_color_vect,
-        #        np.zeros((self.semantic_color_vect.shape[0], 1), dtype="<u1"),
-        #    ),
-        #    axis=1,
-        # )
+        self.semantic_color_vect = np.concatenate(
+            (
+                self.semantic_color_vect,
+                np.zeros((self.semantic_color_vect.shape[0], 1), dtype="<u1"),
+            ),
+            axis=1,
+        )
 
         confidence = sample_points(confidence, self.image_points)
 
         # confidence = np.concatenate((confidence,
 
         # Concatenate data
-        self.ros_data[:, 5] = self.semantic_color_vect[:, 1]
+        self.ros_data[:, 5:6] = self.semantic_color_vect.view("<f4")
         # TODO fix this, I don't think it's what it's supposed to be
-        self.ros_data[:, 6] = confidence[:, 1]
+        self.ros_data[:, 6] = confidence
         return self.make_ros_cloud(stamp)
 
     def generate_cloud_semantic_bayesian_img(
@@ -465,18 +468,9 @@ if __name__ == "__main__":
         lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
         since = time.time()
         stamp = rospy.Time.now()
-
-        # def generate_cloud_semantic_max_img(
-        #    self, bgr_img, three_d_data, semantic_color, confidence, stamp, is_lidar=True
-        # ):
-        semantic_color = [
-            (x * np.ones_like(color_img[..., 2])).astype(np.uint8) for x in (0, 1, 2)
-        ]
-        semantic_color = np.stack(semantic_color, axis=2)
-        confidences = [
-            (x * np.ones_like(color_img[..., 1])).astype(float) for x in (0.9, 0.7, 0.5)
-        ]
-        confidences = np.stack(confidences, axis=2)
+        # The semantic color is just a color image. Flip the input so it's visually different.
+        semantic_color = np.flip(color_img, axis=2)
+        confidences = np.ones_like(color_img[..., 0], dtype=float)
 
         cloud_ros = cloud_gen.generate_cloud_semantic_max_img(
             color_img,
