@@ -114,6 +114,16 @@ class SemanticCloud:
         # TODO update this
         self.cnn_input_size = (self.img_width, self.img_height)
 
+        extrinsics_str = rospy.get_param("/camera/extrinsics")
+        # TODO this is a hack to use the json method
+        # self.extrinsics = np.fromstring(extrinsics_str)
+        self.extrinsics = np.array(json.loads(extrinsics_str), dtype=float)
+        if not np.all(self.extrinsics.shape == (4, 4)):
+            raise ValueError("Extrinscs are the wrong shape")
+
+        if np.linalg.det(self.extrinsics[:3, :3]) != 1:
+            raise ValueError("Extrinsics do not contain a valid rotation")
+
         self.n_classes = rospy.get_param("/semantic_pcl/num_classes")
         self.cmap = color_map(
             N=self.n_classes, normalized=False
@@ -276,7 +286,9 @@ class SemanticCloud:
         except CvBridgeError as e:
             print(e)
 
-        lidar_points = np.stack((lidar["x"], lidar["y"], lidar["z"]), axis=1)
+        # TODO HACK just for testing
+        # lidar_points = np.stack((lidar["x"], lidar["y"], lidar["z"]), axis=1)
+        lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
 
         if self.point_type is PointType.COLOR:
             cloud_ros = self.cloud_generator.generate_cloud_color(
@@ -286,13 +298,16 @@ class SemanticCloud:
             # Do semantic segmantation
             if self.point_type is PointType.SEMANTICS_MAX:
                 semantic_color, pred_confidence = self.predict_max(color_img)
+
+                stamp = rospy.Time.now()
                 cloud_ros = self.cloud_generator.generate_cloud_semantic_max(
                     color_img,
                     lidar_points,
                     semantic_color,
                     pred_confidence,
-                    color_img_ros.header.stamp,
+                    stamp,  # HACK, should be color_img_ros.header.stamp,
                     is_lidar=True,
+                    extrinsics=self.extrinsics,
                 )
 
             elif self.point_type is PointType.SEMANTICS_BAYESIAN:
@@ -305,6 +320,7 @@ class SemanticCloud:
                     self.confidences,
                     color_img_ros.header.stamp,
                     is_lidar=True,
+                    extrinsics=self.extrinsics,
                 )
 
             # Publish semantic image

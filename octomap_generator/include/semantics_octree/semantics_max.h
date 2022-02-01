@@ -49,6 +49,7 @@ namespace octomap
       if(s1.semantic_color == s2.semantic_color)
       {
         ret.semantic_color = s1.semantic_color;
+        // This is dumb IMO, there's no reason to peanalize agreement like this
         ret.confidence = (s1.confidence + s2.confidence) / 2.;
       }
       // If color is different, keep the larger one and drop a little for the disagreement

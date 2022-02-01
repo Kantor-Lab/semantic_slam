@@ -227,7 +227,7 @@ class ColorPclGenerator:
         [x, y, Z] = [X, Y, Z] * intrinsic.T
         """
         if extrinsics is not None:
-            lidar_homog = np.concatenate((lidar, np.ones(lidar.shape[0], 1)), axis=1)
+            lidar_homog = np.concatenate((lidar, np.ones((lidar.shape[0], 1))), axis=1)
             # Perform the matrix multiplication to get the lidar points into the local frame
             lidar_proj = np.dot(extrinsics, lidar_homog.T)
             lidar_transformed = lidar_proj[:3]
@@ -249,6 +249,10 @@ class ColorPclGenerator:
         self.image_points, within_bounds = filter_points_to_image_extent(
             projections_inhomog, (self.img_width, self.img_height)
         )
+        projections_inhomog = np.asarray(projections_homog)
+        # plt.scatter(projections_inhomog[0], projections_inhomog[1])
+        # plt.show()
+        # breakpoint()
 
         # TODO remember that we actually need to keep track of which points we used
         sampled_colors = sample_points(bgr_img, self.image_points)
@@ -335,7 +339,9 @@ class ColorPclGenerator:
         self.cloud_ros.header.stamp = stamp
         return self.cloud_ros
 
-    def generate_cloud_color(self, bgr_img, three_d_data, stamp, is_lidar=True):
+    def generate_cloud_color(
+        self, bgr_img, three_d_data, stamp, is_lidar=True, extrinsics=None,
+    ):
         """
         Generate color point cloud
         \param bgr_img (numpy array bgr8) input color image
@@ -344,14 +350,21 @@ class ColorPclGenerator:
             Interpret three_d_data as lidar rather than a depth image 
         """
         if is_lidar:
-            self.generate_cloud_data_common_lidar(bgr_img, three_d_data)
+            self.generate_cloud_data_common_lidar(bgr_img, three_d_data, extrinsics)
         else:
             self.generate_cloud_data_common_img(bgr_img, three_d_data)
 
         return self.make_ros_cloud(stamp)
 
-    def generate_cloud_semantic_max_img(
-        self, bgr_img, three_d_data, semantic_color, confidence, stamp, is_lidar=True
+    def generate_cloud_semantic_max(
+        self,
+        bgr_img,
+        three_d_data,
+        semantic_color,
+        confidence,
+        stamp,
+        is_lidar=True,
+        extrinsics=None,
     ):
         """ Produce a max confidence image
 
@@ -363,7 +376,7 @@ class ColorPclGenerator:
 
         """
         if is_lidar:
-            self.generate_cloud_data_common_lidar(bgr_img, three_d_data)
+            self.generate_cloud_data_common_lidar(bgr_img, three_d_data, extrinsics)
         else:
             self.generate_cloud_data_common_img(bgr_img, three_d_data)
 
@@ -382,16 +395,20 @@ class ColorPclGenerator:
 
         confidence = sample_points(confidence, self.image_points)
 
-        # confidence = np.concatenate((confidence,
-
         # Concatenate data
         self.ros_data[:, 5:6] = self.semantic_color_vect.view("<f4")
-        # TODO fix this, I don't think it's what it's supposed to be
         self.ros_data[:, 6] = confidence
         return self.make_ros_cloud(stamp)
 
-    def generate_cloud_semantic_bayesian_img(
-        self, bgr_img, three_d_data, semantic_colors, confidences, stamp, is_lidar=True
+    def generate_cloud_semantic_bayesian(
+        self,
+        bgr_img,
+        three_d_data,
+        semantic_colors,
+        confidences,
+        stamp,
+        is_lidar=True,
+        extrinsics=None,
     ):
         """
         Generate semantic point cloud to be used to do bayesian fusion
@@ -402,10 +419,10 @@ class ColorPclGenerator:
         \stamp (ros time stamp)
         """
         if is_lidar:
-            self.generate_cloud_data_common_lidar(bgr_img, three_d_data)
+            self.generate_cloud_data_common_lidar(bgr_img, three_d_data, extrinsics)
         else:
             self.generate_cloud_data_common_img(bgr_img, three_d_data)
-
+        raise NotImplementedError
         # Transform semantic colors
         for i in range(self.num_semantic_colors):
             self.semantic_colors_vect[:, 4 * i : 4 * i + 1] = semantic_colors[i][
@@ -472,7 +489,7 @@ if __name__ == "__main__":
         semantic_color = np.flip(color_img, axis=2)
         confidences = np.ones_like(color_img[..., 0], dtype=float)
 
-        cloud_ros = cloud_gen.generate_cloud_semantic_max_img(
+        cloud_ros = cloud_gen.generate_cloud_semantic_max(
             color_img,
             lidar_points,
             semantic_color=semantic_color,

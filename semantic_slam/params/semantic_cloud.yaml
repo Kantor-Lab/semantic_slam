@@ -7,15 +7,18 @@ camera:
 
   width: 640
   height: 480
+  extrinsics: "[[0, -1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]"
 
 semantic_pcl:
-  color_image_topic: "/camera/rgb/image_raw"
+  color_image_topic: "/mapping/right/image_color" #"/camera/rgb/image_raw"
   depth_image_topic: "/camera/depth_registered/image_raw"
+  lidar_topic: "/velodyne_points"
   point_type: 1
   frame_id: "/camera_rgb_optical_frame"
   dataset: "ade20k" # sunrgbd
   #dataset: "sunrgbd" # sunrgbd
   model_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_rui_yamaha_portugal_UAV_12_21/latest.pth"
   config_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_rui_yamaha_portugal_UAV_12_21/segformer_mit-b5_512x512_160k_rui_yamaha_portugal_UAV_12_21.py"
+  num_classes: 7
 
 device: "cuda:0"
