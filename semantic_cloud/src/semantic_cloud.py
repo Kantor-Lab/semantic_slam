@@ -111,6 +111,14 @@ class SemanticCloud:
             rospy.get_param("/camera/width"),
             rospy.get_param("/camera/height"),
         )
+        # TODO update this
+        self.cnn_input_size = (self.img_width, self.img_height)
+
+        self.n_classes = rospy.get_param("/semantic_pcl/num_classes")
+        self.cmap = color_map(
+            N=self.n_classes, normalized=False
+        )  # Color map for semantic classes
+
         # Set up CNN is use semantics
         if self.point_type is not PointType.COLOR:
             # Taken from my version
@@ -159,7 +167,6 @@ class SemanticCloud:
             cx = rospy.get_param("/camera/cx")
             cy = rospy.get_param("/camera/cy")
             # TODO get the extrinsics
-            # asf
 
             intrinsic = np.matrix(
                 [[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32
@@ -173,20 +180,26 @@ class SemanticCloud:
                 queue_size=1,
                 buff_size=30 * 480 * 640,
             )
-            self.depth_sub = message_filters.Subscriber(
-                rospy.get_param("/semantic_pcl/depth_image_topic"),
-                Image,
+            self.lidar_sub = message_filters.Subscriber(
+                rospy.get_param("/semantic_pcl/lidar_topic"),
+                PointCloud2,
                 queue_size=1,
-                buff_size=40 * 480 * 640,
+                # buff_size=40 * 480 * 640, # TODO set the buff size
             )  # increase buffer size to avoid delay (despite queue_size = 1)
+            # self.depth_sub = message_filters.Subscriber(
+            #    rospy.get_param("/semantic_pcl/depth_image_topic"),
+            #    Image,
+            #    queue_size=1,
+            #    buff_size=40 * 480 * 640,
+            # )  # increase buffer size to avoid delay (despite queue_size = 1)
             self.ts = message_filters.ApproximateTimeSynchronizer(
-                [self.color_sub, self.depth_sub], queue_size=1, slop=0.3
+                [self.color_sub, self.lidar_sub], queue_size=1, slop=0.3
             )  # Take in one color image and one depth image with a limite time gap between message time stamps
-            self.ts.registerCallback(self.color_depth_callback)
+            self.ts.registerCallback(self.color_lidar_callback)
             # TODO Consider if something alterative to this needs to be added
-            # self.cloud_generator = ColorPclGenerator(
-            #    intrinsic, self.img_width, self.img_height, frame_id, self.point_type
-            # )
+            self.cloud_generator = ColorPclGenerator(
+                intrinsic, self.img_width, self.img_height, frame_id, self.point_type
+            )
         else:
             self.image_sub = rospy.Subscriber(
                 rospy.get_param("/semantic_pcl/color_image_topic"),
@@ -199,9 +212,9 @@ class SemanticCloud:
 
         # Initialize the subscribers last or else the callback will trigger
         # when the model hasn't been created
-        self.sub_rectified = rospy.Subscriber(
-            self.cfg["input_topic"], Image, self.image_callback
-        )
+        # self.sub_rectified = rospy.Subscriber(
+        #    rospy.get_param["input_topic"], Image, self.image_callback
+        # )
         self.pub_predictions = rospy.Publisher(
             "/seg_class_predictions", Image, queue_size=1
         )
@@ -248,35 +261,26 @@ class SemanticCloud:
         cv2.imshow("Semantic segmantation", decoded)
         cv2.waitKey(3)
 
-    def color_depth_callback(self, color_img_ros, depth_img_ros):
+    def color_lidar_callback(self, color_img_ros, lidar_ros):
         """
         Callback function to produce point cloud registered with semantic class color based on input color image and depth image
         \param color_img_ros (sensor_msgs.Image) the input color image (bgr8)
-        \param depth_img_ros (sensor_msgs.Image) the input depth image (registered to the color image frame) (float32) values are in meters
+        \param lidar_ros (sensor_msgs.PointCloud2) the lidar in its own frame. TODO 
         """
         # Convert ros Image message to numpy array
         try:
-            color_img = self.bridge.imgmsg_to_cv2(color_img_ros, "bgr8")
-            depth_img = self.bridge.imgmsg_to_cv2(depth_img_ros, "32FC1")
+            color_img = ros_numpy.numpify(color_img_ros)
+            # color_img = self.bridge.imgmsg_to_cv2(color_img_ros, "bgr8")
+            # TODO
+            lidar = ros_numpy.numpify(lidar_ros)
         except CvBridgeError as e:
             print(e)
-        # Resize depth
-        if (
-            depth_img.shape[0] is not self.img_height
-            or depth_img.shape[1] is not self.img_width
-        ):
-            depth_img = resize(
-                depth_img,
-                (self.img_height, self.img_width),
-                order=0,
-                mode="reflect",
-                anti_aliasing=False,
-                preserve_range=True,
-            )  # order = 0, nearest neighbour
-            depth_img = depth_img.astype(np.float32)
+
+        lidar_points = np.stack((lidar["x"], lidar["y"], lidar["z"]), axis=1)
+
         if self.point_type is PointType.COLOR:
             cloud_ros = self.cloud_generator.generate_cloud_color(
-                color_img, depth_img, color_img_ros.header.stamp
+                color_img, lidar_points, color_img_ros.header.stamp,
             )
         else:
             # Do semantic segmantation
@@ -284,10 +288,11 @@ class SemanticCloud:
                 semantic_color, pred_confidence = self.predict_max(color_img)
                 cloud_ros = self.cloud_generator.generate_cloud_semantic_max(
                     color_img,
-                    depth_img,
+                    lidar_points,
                     semantic_color,
                     pred_confidence,
                     color_img_ros.header.stamp,
+                    is_lidar=True,
                 )
 
             elif self.point_type is PointType.SEMANTICS_BAYESIAN:
@@ -295,21 +300,22 @@ class SemanticCloud:
                 # Produce point cloud with rgb colors, semantic colors and confidences
                 cloud_ros = self.cloud_generator.generate_cloud_semantic_bayesian(
                     color_img,
-                    depth_img,
+                    lidar_points,
                     self.semantic_colors,
                     self.confidences,
                     color_img_ros.header.stamp,
+                    is_lidar=True,
                 )
 
             # Publish semantic image
             if self.sem_img_pub.get_num_connections() > 0:
                 if self.point_type is PointType.SEMANTICS_MAX:
-                    semantic_color_msg = self.bridge.cv2_to_imgmsg(
-                        semantic_color, encoding="bgr8"
+                    semantic_color_msg = ros_numpy.msgify(
+                        Image, semantic_color, encoding="bgr8"
                     )
                 else:
-                    semantic_color_msg = self.bridge.cv2_to_imgmsg(
-                        self.semantic_colors[0], encoding="bgr8"
+                    semantic_color_msg = ros_numpy.msgify(
+                        Image, self.semantic_colors[0], encoding="bgr8"
                     )
                 self.sem_img_pub.publish(semantic_color_msg)
 
@@ -323,9 +329,13 @@ class SemanticCloud:
         """
         class_probs = self.predict(img)
         # Take best prediction and confidence
-        pred_confidence, pred_label = class_probs.max(1)
-        pred_confidence = pred_confidence.squeeze(0).cpu().numpy()
-        pred_label = pred_label.squeeze(0).cpu().numpy()
+        # TODO Check this matches the previous behavior
+        # class_probs.max(1)
+        pred_confidence = np.max(class_probs, axis=2)
+        pred_label = np.argmax(class_probs, axis=2)
+
+        # pred_confidence = pred_confidence.squeeze(0).cpu().numpy()
+        # pred_label = pred_label.squeeze(0).cpu().numpy()
         pred_label = resize(
             pred_label,
             (self.img_height, self.img_width),
@@ -401,7 +411,8 @@ class SemanticCloud:
         )  # Give float64
 
         img = img.astype(np.float32)
-        outputs = inference_segmentor(self.model, img, return_probabilites=True)[0]
+        outputs = inference_segmentor(self.model, img, return_probabilities=True)[0]
+        return outputs
         # TODO determine if this pre-processing code is needed
         # img -= self.mean
         ## Convert HWC -> CHW
