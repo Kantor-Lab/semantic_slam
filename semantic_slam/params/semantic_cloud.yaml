@@ -7,7 +7,7 @@ camera:
 
   width: 640
   height: 480
-  extrinsics: "[[0, -1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]"
+  extrinsics: "[[0, -1, 0, 0], [0, 0, 1, 0], [-1, 0, 0, 0], [0, 0, 0, 1]]"
 
 semantic_pcl:
   color_image_topic: "/mapping/right/image_color" #"/camera/rgb/image_raw"

@@ -286,9 +286,10 @@ class SemanticCloud:
         except CvBridgeError as e:
             print(e)
 
-        # TODO HACK just for testing
-        # lidar_points = np.stack((lidar["x"], lidar["y"], lidar["z"]), axis=1)
-        lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
+        lidar_points = np.stack((lidar["x"], lidar["y"], lidar["z"]), axis=1)
+        # TODO HACK make the map smaller because I don't know how to adjust the leaf size
+        lidar_points = lidar_points / 10.0
+        # lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
 
         if self.point_type is PointType.COLOR:
             cloud_ros = self.cloud_generator.generate_cloud_color(
