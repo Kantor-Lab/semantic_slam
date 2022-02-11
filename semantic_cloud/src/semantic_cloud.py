@@ -121,8 +121,8 @@ class SemanticCloud:
         if not np.all(self.extrinsics.shape == (4, 4)):
             raise ValueError("Extrinscs are the wrong shape")
 
-        if np.linalg.det(self.extrinsics[:3, :3]) != 1:
-            raise ValueError("Extrinsics do not contain a valid rotation")
+        if not np.allclose((det := np.linalg.det(self.extrinsics[:3, :3])), 1):
+            raise ValueError(f"Extrinsics do not contain a valid rotation, det = {det}")
 
         self.n_classes = rospy.get_param("/semantic_pcl/num_classes")
         self.cmap = color_map(

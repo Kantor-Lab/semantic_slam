@@ -1,24 +1,25 @@
 # Camera intrinsic matrix parameters (OpenCV)
 camera:
-  fx: 544.771755
-  fy: 546.966312
-  cx: 322.376103
-  cy: 245.357925
+  fx: 719.4674
+  fy: 719.4674
+  cx: 682.85536
+  cy: 555.98205
 
-  width: 640
-  height: 480
-  extrinsics: "[[0, -1, 0, 0], [0, 0, 1, 0], [-1, 0, 0, 0], [0, 0, 0, 1]]"
+  width: 1384
+  height: 1032
+  # Note, you can't have a trailing period for a zero, ex. 0.
+  extrinsics: "[[0.01312761, 0.01523941, 0.99979769, 0.087127],[-0.99983842, -0.01207998, 0.01331228, -0.10737171], [0.0122804, -0.9998109, 0.01507837,0.01905255],[0, 0, 0, 1]]"
 
 semantic_pcl:
-  color_image_topic: "/mapping/right/image_color" #"/camera/rgb/image_raw"
+  color_image_topic: "/mapping/left/image_color" #"/camera/rgb/image_raw"
   depth_image_topic: "/camera/depth_registered/image_raw"
   lidar_topic: "/velodyne_points"
   point_type: 1
   frame_id: "/camera_rgb_optical_frame"
   dataset: "ade20k" # sunrgbd
   #dataset: "sunrgbd" # sunrgbd
-  model_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_rui_yamaha_portugal_UAV_12_21/latest.pth"
-  config_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_rui_yamaha_portugal_UAV_12_21/segformer_mit-b5_512x512_160k_rui_yamaha_portugal_UAV_12_21.py"
-  num_classes: 7
+  model_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/latest.pth"
+  config_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete.py"
+  num_classes: 8
 
 device: "cuda:0"
