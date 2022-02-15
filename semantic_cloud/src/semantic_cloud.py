@@ -287,9 +287,6 @@ class SemanticCloud:
             print(e)
 
         lidar_points = np.stack((lidar["x"], lidar["y"], lidar["z"]), axis=1)
-        # TODO HACK make the map smaller because I don't know how to adjust the leaf size
-        lidar_points = lidar_points / 10.0
-        # lidar_points = (np.random.rand(20000, 3) - 0.5) * 10
 
         if self.point_type is PointType.COLOR:
             cloud_ros = self.cloud_generator.generate_cloud_color(
@@ -300,13 +297,13 @@ class SemanticCloud:
             if self.point_type is PointType.SEMANTICS_MAX:
                 semantic_color, pred_confidence = self.predict_max(color_img)
 
-                stamp = rospy.Time.now()
+                # stamp = rospy.Time.now()
                 cloud_ros = self.cloud_generator.generate_cloud_semantic_max(
                     color_img,
                     lidar_points,
                     semantic_color,
                     pred_confidence,
-                    stamp,  # HACK, should be color_img_ros.header.stamp,
+                    color_img_ros.header.stamp,  # Used to be rospy.Time.now(), I'm not sure which is better
                     is_lidar=True,
                     extrinsics=self.extrinsics,
                 )
