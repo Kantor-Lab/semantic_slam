@@ -263,8 +263,8 @@ class ColorPclGenerator:
         # self.xyd_vect[:, 0:2] = None  # self.xy_index * depth_img.reshape(-1, 1)
         # self.xyd_vect[:, 2:3] = None  # depth_img.reshape(-1, 1)
 
-        # TODO make sure this is actually supposed to be in the camera frame
-        in_front_XYZ = lidar_transformed[:, in_front_of_camera]
+        # This is in the local robot frame, not the camera frame
+        in_front_XYZ = lidar.T[:, in_front_of_camera]
         # Transpose to get it to be (n, 3)
         self.XYZ_vect = in_front_XYZ[:, within_bounds].T
 
