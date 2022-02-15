@@ -365,6 +365,7 @@ class ColorPclGenerator:
         stamp,
         is_lidar=True,
         extrinsics=None,
+        rotate_img_180: bool = True,
     ):
         """ Produce a max confidence image
 
@@ -373,8 +374,15 @@ class ColorPclGenerator:
                 (h, w, 3) image representing the colors of the classes
             confidence: np.array
                 (w, h) confidence of the max class
+            rotate_180:
+                Whether to rotate both the semantic and color images 
 
         """
+        if rotate_img_180:
+            bgr_img, semantic_color = [
+                np.flip(x, (0, 1)) for x in (bgr_img, semantic_color)
+            ]
+
         if is_lidar:
             self.generate_cloud_data_common_lidar(bgr_img, three_d_data, extrinsics)
         else:
@@ -409,6 +417,7 @@ class ColorPclGenerator:
         stamp,
         is_lidar=True,
         extrinsics=None,
+        rotate_img_180: bool = True,
     ):
         """
         Generate semantic point cloud to be used to do bayesian fusion
@@ -418,6 +427,12 @@ class ColorPclGenerator:
         \param confidences (a list of numpy array float32) confidence maps of associated semantic colors, ordered by values (desc)
         \stamp (ros time stamp)
         """
+        # TODO check if this is correct
+        if rotate_img_180:
+            bgr_img, semantic_colors = [
+                np.flip(x, (0, 1)) for x in (bgr_img, semantic_colors)
+            ]
+
         if is_lidar:
             self.generate_cloud_data_common_lidar(bgr_img, three_d_data, extrinsics)
         else:
