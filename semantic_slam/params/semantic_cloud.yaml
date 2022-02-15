@@ -8,8 +8,11 @@ camera:
   width: 1384
   height: 1032
   # Note, you can't have a trailing period for a zero, ex. 0.
-  extrinsics: "[[0.01312761, 0.01523941, 0.99979769, 0.087127],[-0.99983842, -0.01207998, 0.01331228, -0.10737171], [0.0122804, -0.9998109, 0.01507837,0.01905255],[0, 0, 0, 1]]"
-
+  # TODO While these appear approximately correct, they should be validated.
+  extrinsics: "[[0.011095433907303122, -0.9998924705995739, 0.009588461017753862, -0.10873209971588892],
+                [0.006778270099933202, -0.009513621949918713, -0.9999317706983044, 0.016424135466818448],
+                [0.9999154696277387, 0.011159670052216651, 0.006671983473049095, -0.08596729148558155],
+                [0.0, 0.0, 0.0, 1.0]]"
 semantic_pcl:
   color_image_topic: "/mapping/left/image_color" #"/camera/rgb/image_raw"
   depth_image_topic: "/camera/depth_registered/image_raw"
