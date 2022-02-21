@@ -23,7 +23,7 @@ from color_pcl_generator import ColorPclGenerator, PointType
 from cv_bridge import CvBridge, CvBridgeError
 from mmseg.apis import inference_segmentor, init_segmentor
 from mmseg.core.evaluation import get_palette
-from sensor_msgs.msg import Image, PointCloud2
+from sensor_msgs.msg import Image, PointCloud2, CameraInfo
 from skimage.transform import resize
 
 # import torch
@@ -125,9 +125,8 @@ class SemanticCloud:
             raise ValueError(f"Extrinsics do not contain a valid rotation, det = {det}")
 
         self.n_classes = rospy.get_param("/semantic_pcl/num_classes")
-        self.cmap = color_map(
-            N=self.n_classes, normalized=False
-        )  # Color map for semantic classes
+        self.cmap = color_map(N=self.n_classes, normalized=False)
+        # Color map for semantic classes
 
         # Set up CNN is use semantics
         if self.point_type is not PointType.COLOR:
@@ -195,6 +194,9 @@ class SemanticCloud:
                 PointCloud2,
                 queue_size=1,
                 # buff_size=40 * 480 * 640, # TODO set the buff size
+            )  # increase buffer size to avoid delay (despite queue_size = 1)
+            self.intrinsics_sub = message_filters.Subscriber(
+                rospy.get_param("/camera/intrinsics_topic"), CameraInfo, queue_size=1,
             )  # increase buffer size to avoid delay (despite queue_size = 1)
             # self.depth_sub = message_filters.Subscriber(
             #    rospy.get_param("/semantic_pcl/depth_image_topic"),

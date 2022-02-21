@@ -1,9 +1,11 @@
 # Camera intrinsic matrix parameters (OpenCV)
 camera:
-  fx: 719.4674
-  fy: 719.4674
-  cx: 682.85536
-  cy: 555.98205
+  # TODO these parameters should be taken directly from the /mapping/left/camera_info channel
+  intrinsic_topic: /mapping/left/camera_info # Currently unused
+  fx: 1458.20218
+  fy: 1460.09074
+  cx: 684.44996
+  cy: 538.93562
 
   width: 1384
   height: 1032
