@@ -16,7 +16,7 @@ Semantic octomap             |  RGB octomap
 # Install
 Create a `catkin_ws`. Into the `src` folder clone [octomap](git@github.com:OctoMap/octomap.git), [octomap_msgs](git@github.com:OctoMap/octomap_msgs.git), and [ros_numpy](https://github.com/eric-wieser/ros_numpy).
 
-Run `catkin_make_isolated`
+Run `catkin_make_isolated`. Source `devel_isolated/setup.sh`.
 
 ```conda create -f mmseg-ros-environment.yml -n <name>```
 
@@ -24,6 +24,7 @@ Run `catkin_make_isolated`
 
 Update model paths in `semantic_slam/params/semantic_cloud.yaml` to point to the SafeForest Super-repo.
 Run [ros bag](https://drive.google.com/file/d/1fvlerB5mmBoTpVeji7noYaOWlfmmDmXf/view?usp=sharing) containing lidar, pose, and images.
+Run `roslaunch semantic_slam semantic_mapping.launch`.
 
 ### Project Report & Demo:
 
