@@ -13,6 +13,10 @@ Semantic octomap             |  RGB octomap
 ### Modifications (David Russell)
 `semantic_cloud/include/color_pcl_generator/color_pcl_generator.py` now optionally takes in a point cloud and textures it.
 
+# Install
+```conda create -f mmseg-ros-environment.yml -n <name>```
+```pip install -e . <mmseg repo>```
+
 
 ### Project Report & Demo:
 
