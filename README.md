@@ -23,7 +23,7 @@ Run `catkin_make_isolated`
 ```pip install -e . <mmseg repo>```
 
 Update model paths in `semantic_slam/params/semantic_cloud.yaml` to point to the SafeForest Super-repo.
-Run ros bag containing lidar, pose, and images.
+Run [ros bag](https://drive.google.com/file/d/1fvlerB5mmBoTpVeji7noYaOWlfmmDmXf/view?usp=sharing) containing lidar, pose, and images.
 
 ### Project Report & Demo:
 
