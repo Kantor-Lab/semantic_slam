@@ -23,8 +23,8 @@ semantic_pcl:
   frame_id: "/camera_rgb_optical_frame"
   dataset: "ade20k" # sunrgbd
   #dataset: "sunrgbd" # sunrgbd
-  model_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/latest.pth"
-  config_path: "/home/frc-ag-1/data/SafeForestData/models/mmseg/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete.py"
+  model_path: "/home/frc-ag-1/dev/SafeForestSuperepo/data/models/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/iter_160000.pth"
+  config_path: "/home/frc-ag-1/dev/SafeForestSuperepo/data/models/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete.py"
   num_classes: 8
 
 device: "cuda:0"
