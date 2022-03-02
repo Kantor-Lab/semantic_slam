@@ -14,9 +14,16 @@ Semantic octomap             |  RGB octomap
 `semantic_cloud/include/color_pcl_generator/color_pcl_generator.py` now optionally takes in a point cloud and textures it.
 
 # Install
+Create a `catkin_ws`. Into the `src` folder clone [octomap](git@github.com:OctoMap/octomap.git), [octomap_msgs](git@github.com:OctoMap/octomap_msgs.git), and [ros_numpy](https://github.com/eric-wieser/ros_numpy).
+
+Run `catkin_make_isolated`
+
 ```conda create -f mmseg-ros-environment.yml -n <name>```
+
 ```pip install -e . <mmseg repo>```
 
+Update model paths in `semantic_slam/params/semantic_cloud.yaml` to point to the SafeForest Super-repo.
+Run ros bag containing lidar, pose, and images.
 
 ### Project Report & Demo:
 
