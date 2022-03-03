@@ -7,13 +7,13 @@
 #include <sstream>
 #include <cstring> // For std::memcpy
 
-OctomapGeneratorNode::OctomapGeneratorNode(ros::NodeHandle& nh): nh_(nh)
+OctomapGeneratorNode::OctomapGeneratorNode(ros::NodeHandle &nh) : nh_(nh)
 {
   nh_.getParam("/octomap/tree_type", tree_type_);
   // Initiate octree
-  if(tree_type_ == SEMANTICS_OCTREE_BAYESIAN || tree_type_ == SEMANTICS_OCTREE_MAX)
+  if (tree_type_ == SEMANTICS_OCTREE_BAYESIAN || tree_type_ == SEMANTICS_OCTREE_MAX)
   {
-    if(tree_type_ == SEMANTICS_OCTREE_BAYESIAN)
+    if (tree_type_ == SEMANTICS_OCTREE_BAYESIAN)
     {
       ROS_INFO("Semantic octomap generator [bayesian fusion]");
       octomap_generator_ = new OctomapGenerator<PCLSemanticsBayesian, SemanticsOctreeBayesian>();
@@ -32,8 +32,8 @@ OctomapGeneratorNode::OctomapGeneratorNode(ros::NodeHandle& nh): nh_(nh)
   }
   reset();
   fullmap_pub_ = nh_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
-  pointcloud_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2> (nh_, pointcloud_topic_, 5);
-  tf_pointcloud_sub_ = new tf::MessageFilter<sensor_msgs::PointCloud2> (*pointcloud_sub_, tf_listener_, world_frame_id_, 5);
+  pointcloud_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh_, pointcloud_topic_, 5);
+  tf_pointcloud_sub_ = new tf::MessageFilter<sensor_msgs::PointCloud2>(*pointcloud_sub_, tf_listener_, world_frame_id_, 5);
   tf_pointcloud_sub_->registerCallback(boost::bind(&OctomapGeneratorNode::insertCloudCallback, this, _1));
 }
 
@@ -62,25 +62,25 @@ void OctomapGeneratorNode::reset()
   octomap_generator_->setMaxRange(max_range_);
 }
 
-bool OctomapGeneratorNode::toggleUseSemanticColor(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
+bool OctomapGeneratorNode::toggleUseSemanticColor(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response)
 {
   octomap_generator_->setUseSemanticColor(!octomap_generator_->isUseSemanticColor());
-  if(octomap_generator_->isUseSemanticColor())
+  if (octomap_generator_->isUseSemanticColor())
     ROS_INFO("Using semantic color");
   else
     ROS_INFO("Using rgb color");
   if (octomap_msgs::fullMapToMsg(*octomap_generator_->getOctree(), map_msg_))
-     fullmap_pub_.publish(map_msg_);
+    fullmap_pub_.publish(map_msg_);
   else
-     ROS_ERROR("Error serializing OctoMap");
+    ROS_ERROR("Error serializing OctoMap");
   return true;
 }
 
-void OctomapGeneratorNode::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+void OctomapGeneratorNode::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr &cloud_msg)
 {
   // Voxel filter to down sample the point cloud
   // Create the filtering object
-  pcl::PCLPointCloud2::Ptr cloud (new pcl::PCLPointCloud2 ());
+  pcl::PCLPointCloud2::Ptr cloud(new pcl::PCLPointCloud2());
   pcl_conversions::toPCL(*cloud_msg, *cloud);
   // Get tf transform
   tf::StampedTransform sensorToWorldTf;
@@ -88,9 +88,9 @@ void OctomapGeneratorNode::insertCloudCallback(const sensor_msgs::PointCloud2::C
   {
     tf_listener_.lookupTransform(world_frame_id_, cloud_msg->header.frame_id, cloud_msg->header.stamp, sensorToWorldTf);
   }
-  catch(tf::TransformException& ex)
+  catch (tf::TransformException &ex)
   {
-    ROS_ERROR_STREAM( "Transform error of sensor data: " << ex.what() << ", quitting callback");
+    ROS_ERROR_STREAM("Transform error of sensor data: " << ex.what() << ", quitting callback");
     return;
   }
   // Transform coordinate
@@ -101,17 +101,17 @@ void OctomapGeneratorNode::insertCloudCallback(const sensor_msgs::PointCloud2::C
   map_msg_.header.frame_id = world_frame_id_;
   map_msg_.header.stamp = cloud_msg->header.stamp;
   if (octomap_msgs::fullMapToMsg(*octomap_generator_->getOctree(), map_msg_))
-     fullmap_pub_.publish(map_msg_);
+    fullmap_pub_.publish(map_msg_);
   else
-     ROS_ERROR("Error serializing OctoMap");
+    ROS_ERROR("Error serializing OctoMap");
 }
 
-bool OctomapGeneratorNode::save(const char* filename) const
+bool OctomapGeneratorNode::save(const char *filename) const
 {
   octomap_generator_->save(filename);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   ros::init(argc, argv, "octomap_generator");
   ros::NodeHandle nh;
