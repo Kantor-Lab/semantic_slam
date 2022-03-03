@@ -26,9 +26,7 @@ from mmseg.core.evaluation import get_palette
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo
 from skimage.transform import resize
 
-# import torch
-# from ptsemseg.models import get_model
-# from ptsemseg.utils import convert_state_dict
+import torch
 
 
 def color_map(N=256, normalized=False):
@@ -112,7 +110,7 @@ class SemanticCloud:
             rospy.get_param("/camera/height"),
         )
         # TODO update this
-        self.cnn_input_size = (self.img_width, self.img_height)
+        self.cnn_input_size = (self.img_height, self.img_width)
 
         extrinsics_str = rospy.get_param("/camera/extrinsics")
         # TODO this is a hack to use the json method
@@ -195,9 +193,9 @@ class SemanticCloud:
                 queue_size=1,
                 # buff_size=40 * 480 * 640, # TODO set the buff size
             )  # increase buffer size to avoid delay (despite queue_size = 1)
-            self.intrinsics_sub = message_filters.Subscriber(
-                rospy.get_param("/camera/intrinsics_topic"), CameraInfo, queue_size=1,
-            )  # increase buffer size to avoid delay (despite queue_size = 1)
+            # self.intrinsics_sub = message_filters.Subscriber(
+            #    rospy.get_param("/camera/intrinsics_topic"), CameraInfo, queue_size=1,
+            # )  # increase buffer size to avoid delay (despite queue_size = 1)
             # self.depth_sub = message_filters.Subscriber(
             #    rospy.get_param("/semantic_pcl/depth_image_topic"),
             #    Image,
@@ -256,7 +254,7 @@ class SemanticCloud:
             anti_aliasing=False,
             preserve_range=True,
         )  # order = 0, nearest neighbour
-        label = label.astype(np.int)
+        label = label.astype(int)
         # Add semantic class colors
         decoded = decode_segmap(
             label, self.n_classes, self.cmap
@@ -349,7 +347,6 @@ class SemanticCloud:
         # class_probs.max(1)
         pred_confidence = np.max(class_probs, axis=2)
         pred_label = np.argmax(class_probs, axis=2)
-
         # pred_confidence = pred_confidence.squeeze(0).cpu().numpy()
         # pred_label = pred_label.squeeze(0).cpu().numpy()
         pred_label = resize(
@@ -360,7 +357,7 @@ class SemanticCloud:
             anti_aliasing=False,
             preserve_range=True,
         )  # order = 0, nearest neighbour
-        pred_label = pred_label.astype(np.int)
+        pred_label = pred_label.astype(int)
         # Add semantic color
         semantic_color = decode_segmap(pred_label, self.n_classes, self.cmap)
         pred_confidence = resize(
@@ -380,7 +377,7 @@ class SemanticCloud:
         class_probs = self.predict(img)
         # Take 3 best predictions and their confidences (probabilities)
         pred_confidences, pred_labels = torch.topk(
-            input=class_probs, k=3, dim=1, largest=True, sorted=True
+            input=class_probs, k=3, dim=2, largest=True, sorted=True
         )
         pred_labels = pred_labels.squeeze(0).cpu().numpy()
         pred_confidences = pred_confidences.squeeze(0).cpu().numpy()
@@ -429,21 +426,6 @@ class SemanticCloud:
         img = img.astype(np.float32)
         outputs = inference_segmentor(self.model, img, return_probabilities=True)[0]
         return outputs
-        # TODO determine if this pre-processing code is needed
-        # img -= self.mean
-        ## Convert HWC -> CHW
-        # img = img.transpose(2, 0, 1)
-        ## Convert to tensor
-        # img = torch.tensor(img, dtype=torch.float32)
-        # img = img.unsqueeze(0)  # Add batch dimension required by CNN
-        # with torch.no_grad():
-        #    img = img.to(self.device)
-        #    # Do inference
-        #    since = time.time()
-        #    outputs = self.model(img)  # N,C,W,H
-        #    # Apply softmax to obtain normalized probabilities
-        #    outputs = torch.nn.functional.softmax(outputs, 1)
-        #    return outputs
 
 
 def main(args):
