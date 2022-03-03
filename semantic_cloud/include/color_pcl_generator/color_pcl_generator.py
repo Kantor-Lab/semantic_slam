@@ -10,6 +10,8 @@ import numpy as np
 import rospy
 from mpl_toolkits.mplot3d import Axes3D
 from sensor_msgs.msg import PointCloud2, PointField
+import matplotlib.pyplot as plt
+import imageio
 
 # import time
 
@@ -119,11 +121,12 @@ class ColorPclGenerator:
 
         # TODO figure out what these semantic colors are and if they're needed
         # TODO Figure out why this is
-        self.semantic_color_vect = None  # np.zeros
-        #    [width * height, 6 * self.num_semantic_colors], dtype="<u1"
+        # self.semantic_color_vect = np.zeros([width * height, 4], dtype="<u1")  # bgr0
+        # self.semantic_colors_vect = np.zeros(
+        #    [width * height, 4 * self.num_semantic_colors], dtype="<u1"
         # )  # bgr0bgr0bgr0 ...
-        self.confidences_vect = None  # np.zeros(
-        #    [width * height, self.num_semantic_colors], dtype="<f5"
+        # self.confidences_vect = np.zeros(
+        #    [width * height, self.num_semantic_colors], dtype="<f4"
         # )  # class confidences
         # Prepare ros cloud msg
         # Cloud data is serialized into a contiguous buffer, set fields to specify offsets in buffer
@@ -429,29 +432,41 @@ class ColorPclGenerator:
         """
         # TODO check if this is correct
         if rotate_img_180:
-            bgr_img, semantic_colors = [
-                np.flip(x, (0, 1)) for x in (bgr_img, semantic_colors)
-            ]
+            bgr_img = np.flip(bgr_img, (0, 1))
+            semantic_colors = np.flip(semantic_colors, (1, 2))
 
         if is_lidar:
             self.generate_cloud_data_common_lidar(bgr_img, three_d_data, extrinsics)
         else:
             self.generate_cloud_data_common_img(bgr_img, three_d_data)
-        raise NotImplementedError
+
         # Transform semantic colors
+        num_points_in_image = self.image_points.shape[1]
+        self.semantic_colors_vect = np.zeros(
+            (num_points_in_image, 4 * self.num_semantic_colors), dtype="<u1"
+        )
+        self.confidences_vect = np.zeros(
+            [num_points_in_image, self.num_semantic_colors], dtype="<f4"
+        )  # class confidences
+
         for i in range(self.num_semantic_colors):
-            self.semantic_colors_vect[:, 4 * i : 4 * i + 1] = semantic_colors[i][
-                :, :, 0
-            ].reshape(-1, 1)
-            self.semantic_colors_vect[:, 4 * i + 1 : 4 * i + 2] = semantic_colors[i][
-                :, :, 1
-            ].reshape(-1, 1)
-            self.semantic_colors_vect[:, 4 * i + 2 : 4 * i + 3] = semantic_colors[i][
-                :, :, 2
-            ].reshape(-1, 1)
+            first_channel = semantic_colors[i][:, :, 0]
+            second_channel = semantic_colors[i][:, :, 1]
+            third_channel = semantic_colors[i][:, :, 2]
+
+            sampled_first_channel = sample_points(first_channel, self.image_points)
+            sampled_second_channel = sample_points(second_channel, self.image_points)
+            sampled_third_channel = sample_points(third_channel, self.image_points)
+
+            self.semantic_colors_vect[:, 4 * i] = sampled_first_channel
+            self.semantic_colors_vect[:, 4 * i + 1] = sampled_second_channel
+            self.semantic_colors_vect[:, 4 * i + 2] = sampled_third_channel
+
         # Transform class confidence
         for i in range(self.num_semantic_colors):
-            self.confidences_vect[:, i : i + 1] = confidences[i].reshape(-1, 1)
+            sampled_confidence = sample_points(confidences[i], self.image_points)
+            self.confidences_vect[:, i] = sampled_confidence
+
         # Concatenate data
         self.ros_data[
             :, 8 : 8 + self.num_semantic_colors

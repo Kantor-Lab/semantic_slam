@@ -15,6 +15,7 @@ import sys
 import time
 
 import cv2
+from cv2 import ROTATE_180
 import message_filters
 import numpy as np
 import ros_numpy
@@ -25,6 +26,7 @@ from mmseg.apis import inference_segmentor, init_segmentor
 from mmseg.core.evaluation import get_palette
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo
 from skimage.transform import resize
+import matplotlib.pyplot as plt
 
 import torch
 
@@ -311,6 +313,7 @@ class SemanticCloud:
             elif self.point_type is PointType.SEMANTICS_BAYESIAN:
                 self.predict_bayesian(color_img)
                 # Produce point cloud with rgb colors, semantic colors and confidences
+                # TODO see if this should really be rotating
                 cloud_ros = self.cloud_generator.generate_cloud_semantic_bayesian(
                     color_img,
                     lidar_points,
@@ -376,15 +379,21 @@ class SemanticCloud:
         """
         class_probs = self.predict(img)
         # Take 3 best predictions and their confidences (probabilities)
+        # TODO see if I can avoid casting to a tensor
+        # The copy is to avoid a negative stride error
         pred_confidences, pred_labels = torch.topk(
-            input=class_probs, k=3, dim=2, largest=True, sorted=True
+            input=torch.Tensor(class_probs.copy()),
+            k=3,
+            dim=2,
+            largest=True,
+            sorted=True,
         )
-        pred_labels = pred_labels.squeeze(0).cpu().numpy()
-        pred_confidences = pred_confidences.squeeze(0).cpu().numpy()
+        pred_labels = pred_labels.cpu().numpy()
+        pred_confidences = pred_confidences.cpu().numpy()
         # Resize predicted labels and confidences to original image size
-        for i in range(pred_labels.shape[0]):
+        for i in range(pred_labels.shape[2]):
             pred_labels_resized = resize(
-                pred_labels[i],
+                pred_labels[..., i],
                 (self.img_height, self.img_width),
                 order=0,
                 mode="reflect",
@@ -396,16 +405,16 @@ class SemanticCloud:
             self.semantic_colors[i] = decode_segmap(
                 pred_labels_resized, self.n_classes, self.cmap
             )
-        for i in range(pred_confidences.shape[0]):
+        for i in range(pred_confidences.shape[2]):
             self.confidences[i] = resize(
-                pred_confidences[i],
+                pred_confidences[..., i],
                 (self.img_height, self.img_width),
                 mode="reflect",
                 anti_aliasing=True,
                 preserve_range=True,
             )
 
-    def predict(self, img):
+    def predict(self, img, flip_channels=True, rotate_180=True):
         """
         Do semantic segmantation
         \param img: (numpy array bgr8) The input cv image
@@ -424,7 +433,15 @@ class SemanticCloud:
         )  # Give float64
 
         img = img.astype(np.float32)
+        if flip_channels:
+            img = np.flip(img, axis=2)
+        if rotate_180:
+            img = np.flip(img, axis=(0, 1))
+
         outputs = inference_segmentor(self.model, img, return_probabilities=True)[0]
+
+        if rotate_180:
+            outputs = np.flip(outputs, axis=(0, 1))
         return outputs
 
 
