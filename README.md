@@ -21,3 +21,7 @@ Download the [ros bag](https://drive.google.com/file/d/1fvlerB5mmBoTpVeji7noYaOW
 
 # Modifications (David Russell)
 `semantic_cloud/include/color_pcl_generator/color_pcl_generator.py` now optionally takes in a point cloud and textures it.
+
+# Params
+`semantic_slam/semantic_slam/params/octomap_generator.yaml:octomap:frame_id` should be set to your odometry topic
+`semantic_slam/semantic_slam/params/octomap_generator.yaml:octomap:frame_id` should be set to your odometry topic

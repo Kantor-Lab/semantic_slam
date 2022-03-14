@@ -20,7 +20,7 @@ semantic_pcl:
   depth_image_topic: "/camera/depth_registered/image_raw"
   lidar_topic: "/velodyne_points"
   point_type: 1
-  frame_id: "/camera_rgb_optical_frame"
+  frame_id: "/lidar_link"
   dataset: "ade20k" # sunrgbd
   #dataset: "sunrgbd" # sunrgbd
   model_path: "/home/frc-ag-1/dev/SafeForestSuperepo/data/models/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/iter_160000.pth"
