@@ -11,7 +11,7 @@ Run `catkin_make` from the `catkin_ws` folder to build the package and and then 
 
 Now we need to set up a conda environment containing the dependencies. The suggested name is `semantic_slam`, but you can change it to whatever.
 ```
-conda create -f mmseg-ros-environment.yml -n semantic_slam 
+conda env create -f mmseg-ros-environment.yml -n semantic_slam 
 conda activate semantic_slam 
 ```
 Now we need to install `mmsegmentation` from my fork. Clone the repo from [my fork](git@github.com:russelldj/mmsegmentation.git), which contains a modification to return the confidence values. Now `cd` to that directory and with the conda environment activated, `pip install -e .` to install the project into the conda environment.
