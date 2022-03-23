@@ -43,6 +43,8 @@ def filter_points_to_image_extent(points, img_size, offset=0.5, return_indices=T
         np.array:
             Valid points after filtering. (2, n).
     """
+    # Account for differences in how matrices and arrays deal with indexing a single dimension
+    points = np.asarray(points)
 
     img_size_x, img_size_y = img_size
     inside = np.logical_and.reduce(
@@ -52,7 +54,7 @@ def filter_points_to_image_extent(points, img_size, offset=0.5, return_indices=T
             points[0] < (img_size_x - offset),
             points[1] < (img_size_y - offset),
         )
-    )[0]
+    )
     points_inside = points[:, inside]
 
     if return_indices:
@@ -74,11 +76,15 @@ def sample_points(img, img_points):
         np.array
         Sampled points concatenated vertically
     """
+    if isinstance(img_points, np.matrix):
+        # Avoid weird behavior
+        img_points = np.asarray(img_points)
+
     # Force non-int points to be ints
     if issubclass(img_points.dtype.type, np.floating):
         img_points = np.round(img_points).astype(np.uint16)
 
-    sampled_values = img[img_points[1], img_points[0]][0]
+    sampled_values = img[img_points[1], img_points[0]]
     return sampled_values
 
 
@@ -216,6 +222,12 @@ class ColorPclGenerator:
         )
         self.cloud_ros.is_dense = False
 
+    def set_intrinsics(self, intrinsics):
+        """
+        Set the intrinsics K matrix
+        """
+        self.intrinsic = intrinsics
+
     def generate_cloud_data_common_lidar(self, bgr_img, lidar, extrinsics=None):
         """Project lidar points into the image and texture ones which are within the frame of the image 
 
@@ -238,14 +250,14 @@ class ColorPclGenerator:
             # Keep the lidar frame the same as it was initially
             lidar_transformed = lidar.T
 
-        # TODO functionize
-
         # Note that lidar_transformed is (3, n) to facilitate easier multiplication
         in_front_of_camera = lidar_transformed[2] > 0
         # Take only points which are in front of the camera
         lidar_transformed_filtered = lidar_transformed[:, in_front_of_camera]
         # Project each point into the image
-        projections_homog = np.dot(self.intrinsic, lidar_transformed_filtered)
+        projections_homog = np.dot(
+            np.matrix(self.intrinsic), lidar_transformed_filtered
+        )
         projections_inhomog = projections_homog[:2] / projections_homog[2]
 
         # TODO consider using the shape from the current image
@@ -253,32 +265,17 @@ class ColorPclGenerator:
             projections_inhomog, (self.img_width, self.img_height)
         )
         projections_inhomog = np.asarray(projections_homog)
-        # plt.scatter(projections_inhomog[0], projections_inhomog[1])
-        # plt.show()
-        # breakpoint()
 
         # TODO remember that we actually need to keep track of which points we used
         sampled_colors = sample_points(bgr_img, self.image_points)
 
         self.cloud_ros.width = self.image_points.shape[1]
 
-        # TODO figure out if these need to be set
-        # self.xyd_vect[:, 0:2] = None  # self.xy_index * depth_img.reshape(-1, 1)
-        # self.xyd_vect[:, 2:3] = None  # depth_img.reshape(-1, 1)
-
         # This is in the local robot frame, not the camera frame
         in_front_XYZ = lidar.T[:, in_front_of_camera]
         # Transpose to get it to be (n, 3)
         self.XYZ_vect = in_front_XYZ[:, within_bounds].T
-
         num_points = sampled_colors.shape[0]
-
-        # Convert to ROS point cloud message in a vectorialized manner
-        # ros msg data: [x,y,z,0,bgr0,0,0,0,color0,color1,color2,0,confidence0,confidence1,confidenc2,0] (little endian float32)
-        # Transform color
-        # This should just be a one-liner
-        # TODO figure out what type this should be
-        # It's currently float64
 
         self.bgr0_vect = np.concatenate(
             (sampled_colors, np.zeros((num_points, 1), dtype=np.uint8)),
@@ -299,8 +296,6 @@ class ColorPclGenerator:
         # Concatenate data
         self.ros_data[:, 0:3] = self.XYZ_vect
         self.ros_data[:, 4:5] = self.bgr0_vect.view("<f4")
-
-        # self.show_point_cloud()
 
     def show_point_cloud(self):
         # 3D Plot

@@ -195,18 +195,16 @@ class SemanticCloud:
                 queue_size=1,
                 # buff_size=40 * 480 * 640, # TODO set the buff size
             )  # increase buffer size to avoid delay (despite queue_size = 1)
-            # self.intrinsics_sub = message_filters.Subscriber(
-            #    rospy.get_param("/camera/intrinsics_topic"), CameraInfo, queue_size=1,
-            # )  # increase buffer size to avoid delay (despite queue_size = 1)
-            # self.depth_sub = message_filters.Subscriber(
-            #    rospy.get_param("/semantic_pcl/depth_image_topic"),
-            #    Image,
-            #    queue_size=1,
-            #    buff_size=40 * 480 * 640,
-            # )  # increase buffer size to avoid delay (despite queue_size = 1)
+
+            intrinsic_topic = rospy.get_param("/camera/intrinsic_topic")
+            # TODO figure out if this needs to be anything else
+            self.intrinsics_sub = rospy.Subscriber(
+                intrinsic_topic, CameraInfo, self.intrinsics_calback, queue_size=1,
+            )  # increase buffer size to avoid delay (despite queue_size = 1)
             self.ts = message_filters.ApproximateTimeSynchronizer(
                 [self.color_sub, self.lidar_sub], queue_size=1, slop=0.3
             )  # Take in one color image and one depth image with a limite time gap between message time stamps
+            # TODO assume figure out if we can ever expect to deal with changing intrinsics
             self.ts.registerCallback(self.color_lidar_callback)
             # TODO Consider if something alterative to this needs to be added
             self.cloud_generator = ColorPclGenerator(
@@ -231,6 +229,12 @@ class SemanticCloud:
             "/seg_class_predictions", Image, queue_size=1
         )
         self.pub_vis = rospy.Publisher("/seg_vis", Image, queue_size=1)
+
+    def intrinsics_calback(self, intrinsics):
+        K = np.array(intrinsics.K)
+        K = np.array(K.reshape((3, 3)))
+        self.cloud_generator.set_intrinsics(K)
+        # TODO create a remapper that respects the distortion model
 
     def color_callback(self, color_img_ros):
         """
