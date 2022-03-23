@@ -255,9 +255,7 @@ class ColorPclGenerator:
         # Take only points which are in front of the camera
         lidar_transformed_filtered = lidar_transformed[:, in_front_of_camera]
         # Project each point into the image
-        projections_homog = np.dot(
-            np.matrix(self.intrinsic), lidar_transformed_filtered
-        )
+        projections_homog = np.dot(self.intrinsic, lidar_transformed_filtered)
         projections_inhomog = projections_homog[:2] / projections_homog[2]
 
         # TODO consider using the shape from the current image
@@ -266,22 +264,30 @@ class ColorPclGenerator:
         )
         projections_inhomog = np.asarray(projections_homog)
 
-        # TODO remember that we actually need to keep track of which points we used
         sampled_colors = sample_points(bgr_img, self.image_points)
 
-        self.cloud_ros.width = self.image_points.shape[1]
+        self.cloud_ros.width = lidar_transformed.shape[1]
+
+        num_points = lidar.shape[0]
 
         # This is in the local robot frame, not the camera frame
         in_front_XYZ = lidar.T[:, in_front_of_camera]
+        behind_XYZ = lidar[np.logical_not(in_front_of_camera), :]
         # Transpose to get it to be (n, 3)
         self.XYZ_vect = in_front_XYZ[:, within_bounds].T
-        num_points = sampled_colors.shape[0]
+        out_of_bounds_XYZ = in_front_XYZ[:, np.logical_not(within_bounds)].T
+
+        unlabeled_XYZ = np.concatenate((behind_XYZ, out_of_bounds_XYZ), axis=0)
+        num_unlabeled = unlabeled_XYZ.shape[0]
+        num_points_in_FOV = sampled_colors.shape[0]
 
         self.bgr0_vect = np.concatenate(
-            (sampled_colors, np.zeros((num_points, 1), dtype=np.uint8)),
+            (sampled_colors, np.zeros((num_points_in_FOV, 1), dtype=np.uint8)),
             axis=1,
             dtype=np.uint8,
         )
+
+        unlabeled_bgr0 = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
 
         if self.point_type is PointType.SEMANTICS_BAYESIAN:
             # Why is this ones and not zeros?
@@ -294,8 +300,12 @@ class ColorPclGenerator:
             )  # [x,y,z,0,bgr0,0,0,0] or [x,y,z,0,bgr0,semantics,confidence,0]
 
         # Concatenate data
-        self.ros_data[:, 0:3] = self.XYZ_vect
-        self.ros_data[:, 4:5] = self.bgr0_vect.view("<f4")
+        self.ros_data[:num_points_in_FOV, 0:3] = self.XYZ_vect
+        self.ros_data[:num_points_in_FOV, 4:5] = self.bgr0_vect.view("<f4")
+
+        # Fill in the unlabeled points
+        self.ros_data[num_points_in_FOV:, 0:3] = unlabeled_XYZ
+        self.ros_data[num_points_in_FOV:, 4:5] = unlabeled_bgr0.view("<f4")
 
     def show_point_cloud(self):
         # 3D Plot
@@ -391,6 +401,7 @@ class ColorPclGenerator:
             semantic_color, self.image_points
         ).astype("<u1")
 
+        num_points_in_FOV = self.image_points.shape[1]
         self.semantic_color_vect = np.concatenate(
             (
                 self.semantic_color_vect,
@@ -401,9 +412,15 @@ class ColorPclGenerator:
 
         confidence = sample_points(confidence, self.image_points)
 
+        num_unlabeled = self.ros_data.shape[0] - num_points_in_FOV
+        unlabeled_semantic_color = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
+        # TODO fill only the number of points that are present
         # Concatenate data
-        self.ros_data[:, 5:6] = self.semantic_color_vect.view("<f4")
-        self.ros_data[:, 6] = confidence
+        self.ros_data[:num_points_in_FOV, 5:6] = self.semantic_color_vect.view("<f4")
+        self.ros_data[:num_points_in_FOV, 6] = confidence
+
+        self.ros_data[num_points_in_FOV:, 5:6] = unlabeled_semantic_color.view("<f4")
+        self.ros_data[num_points_in_FOV:, 6] = 0.001
         return self.make_ros_cloud(stamp)
 
     def generate_cloud_semantic_bayesian(
@@ -462,6 +479,7 @@ class ColorPclGenerator:
             sampled_confidence = sample_points(confidences[i], self.image_points)
             self.confidences_vect[:, i] = sampled_confidence
 
+        # TODO fill only the number of points that are present
         # Concatenate data
         self.ros_data[
             :, 8 : 8 + self.num_semantic_colors
