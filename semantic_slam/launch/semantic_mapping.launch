@@ -13,7 +13,7 @@
 <node pkg="rviz" type="rviz" name="rviz" args="-d $(find semantic_slam)/semantic_mapping.rviz"/>
 
 <!--static tranform-->
-<node pkg="tf" type="static_transform_publisher" name="map_aft" args="0 0 0 0 0 0 1 /aft_mapped /camera_rgb_optical_frame 100"/>
+<node pkg="tf" type="static_transform_publisher" name="map_aft" args="2 0 0 0 0 0 1 /aft_mapped /camera_rgb_optical_frame 100"/>
 
 <!--static tranform-->
 <node pkg="tf" type="static_transform_publisher" name="map_world" args="0 0 0 0 0 0 1 /world /map  100"/>

@@ -23,8 +23,8 @@ semantic_pcl:
   frame_id: "/lidar_link"
   dataset: "ade20k" # sunrgbd
   #dataset: "sunrgbd" # sunrgbd
-  model_path: "/home/frc-ag-1/dev/SafeForestSuperepo/data/models/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/iter_160000.pth"
-  config_path: "/home/frc-ag-1/dev/SafeForestSuperepo/data/models/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete/segformer_mit-b5_512x512_160k_portugal_UAV_12_21_safe_forest_2_pred_labels_sete.py"
+  model_path: "/home/frc-ag-1/dev/mmsegmentation/work_dirs/segformer_mit-b5_512x512_10k_sete_05_finetune_superannotate_training/latest.pth"
+  config_path: "/home/frc-ag-1/dev/mmsegmentation/work_dirs/segformer_mit-b5_512x512_10k_sete_05_finetune_superannotate_training/segformer_mit-b5_512x512_10k_sete_05_finetune_superannotate_training.py"
   num_classes: 8
 
 device: "cuda:0"

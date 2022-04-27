@@ -8,7 +8,6 @@
 #include <octomap/ColorOcTree.h>
 #define NUM_SEMANTICS 3
 
-
 namespace octomap
 {
 
@@ -17,7 +16,7 @@ namespace octomap
   {
     ColorWithConfidence()
     {
-      color = ColorOcTreeNode::Color(255,255,255);
+      color = ColorOcTreeNode::Color(255, 255, 255);
       confidence = 1.;
     }
     ColorWithConfidence(ColorOcTreeNode::Color col, float conf)
@@ -27,25 +26,25 @@ namespace octomap
     }
     ColorOcTreeNode::Color color;
     float confidence;
-    inline bool operator==(const ColorWithConfidence& rhs) const
+    inline bool operator==(const ColorWithConfidence &rhs) const
     {
-        return color == rhs.color && confidence == rhs.confidence;
+      return color == rhs.color && confidence == rhs.confidence;
     }
-    inline bool operator!=(const ColorWithConfidence& rhs) const
+    inline bool operator!=(const ColorWithConfidence &rhs) const
     {
-        return color != rhs.color || confidence != rhs.confidence;
+      return color != rhs.color || confidence != rhs.confidence;
     }
-    inline bool operator<(const ColorWithConfidence& rhs) const
+    inline bool operator<(const ColorWithConfidence &rhs) const
     {
       return confidence < rhs.confidence;
     }
-    inline bool operator>(const ColorWithConfidence& rhs) const
+    inline bool operator>(const ColorWithConfidence &rhs) const
     {
       return confidence > rhs.confidence;
     }
   };
 
-  std::ostream& operator<<(std::ostream& out, ColorWithConfidence const& c);
+  std::ostream &operator<<(std::ostream &out, ColorWithConfidence const &c);
   /// Structure contains semantic colors and their confidences
   struct SemanticsBayesian
   {
@@ -53,28 +52,28 @@ namespace octomap
 
     SemanticsBayesian()
     {
-      for(int i = 0; i < NUM_SEMANTICS; i++)
+      for (int i = 0; i < NUM_SEMANTICS; i++)
       {
         data[i] = ColorWithConfidence();
       }
     }
 
-    bool operator==(const SemanticsBayesian& rhs) const
+    bool operator==(const SemanticsBayesian &rhs) const
     {
-        for(int i = 0; i < NUM_SEMANTICS; i++)
+      for (int i = 0; i < NUM_SEMANTICS; i++)
+      {
+        if (data[i] != rhs.data[i])
         {
-          if(data[i] != rhs.data[i])
-          {
-            return false;
-            break;
-          }
+          return false;
+          break;
         }
-        return true;
+      }
+      return true;
     }
 
-    bool operator!=(const SemanticsBayesian& rhs) const
+    bool operator!=(const SemanticsBayesian &rhs) const
     {
-        return !(*this == rhs);
+      return !(*this == rhs);
     }
 
     ColorOcTreeNode::Color getSemanticColor() const
@@ -84,9 +83,9 @@ namespace octomap
 
     bool isSemanticsSet() const
     {
-      for(int i = 0; i < NUM_SEMANTICS; i++)
+      for (int i = 0; i < NUM_SEMANTICS; i++)
       {
-        if(data[i].color != ColorOcTreeNode::Color(255,255,255))
+        if (data[i].color != ColorOcTreeNode::Color(255, 255, 255))
           return true;
       }
       return false;
@@ -96,6 +95,6 @@ namespace octomap
     static SemanticsBayesian semanticFusion(const SemanticsBayesian s1, const SemanticsBayesian s2);
   };
 
-  std::ostream& operator<<(std::ostream& out, SemanticsBayesian const& s);
+  std::ostream &operator<<(std::ostream &out, SemanticsBayesian const &s);
 }
 #endif //SEMANTICS_BAYESIAN_H

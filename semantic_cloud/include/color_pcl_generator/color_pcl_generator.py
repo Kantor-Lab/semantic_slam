@@ -412,13 +412,13 @@ class ColorPclGenerator:
 
         confidence = sample_points(confidence, self.image_points)
 
-        num_unlabeled = self.ros_data.shape[0] - num_points_in_FOV
-        unlabeled_semantic_color = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
         # TODO fill only the number of points that are present
         # Concatenate data
         self.ros_data[:num_points_in_FOV, 5:6] = self.semantic_color_vect.view("<f4")
         self.ros_data[:num_points_in_FOV, 6] = confidence
 
+        num_unlabeled = self.ros_data.shape[0] - num_points_in_FOV
+        unlabeled_semantic_color = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
         self.ros_data[num_points_in_FOV:, 5:6] = unlabeled_semantic_color.view("<f4")
         self.ros_data[num_points_in_FOV:, 6] = 0.001
         return self.make_ros_cloud(stamp)
