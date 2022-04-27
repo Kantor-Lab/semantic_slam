@@ -114,6 +114,7 @@ class ColorPclGenerator:
         )
         self.img_width = width
         self.img_height = height
+
         # Allocate arrays
         # x_index = np.array([range(width) * height], dtype="<f4")
         # TODO if this is needed, there is certainly a meshgrid way to do it
@@ -416,11 +417,16 @@ class ColorPclGenerator:
         # Concatenate data
         self.ros_data[:num_points_in_FOV, 5:6] = self.semantic_color_vect.view("<f4")
         self.ros_data[:num_points_in_FOV, 6] = confidence
-
-        num_unlabeled = self.ros_data.shape[0] - num_points_in_FOV
-        unlabeled_semantic_color = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
-        self.ros_data[num_points_in_FOV:, 5:6] = unlabeled_semantic_color.view("<f4")
-        self.ros_data[num_points_in_FOV:, 6] = 0.001
+        if False:
+            num_unlabeled = self.ros_data.shape[0] - num_points_in_FOV
+            unlabeled_semantic_color = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
+            self.ros_data[num_points_in_FOV:, 5:6] = unlabeled_semantic_color.view(
+                "<f4"
+            )
+            self.ros_data[num_points_in_FOV:, 6] = 0.001
+        else:
+            self.ros_data = self.ros_data[:num_points_in_FOV]
+            self.cloud_ros.width = num_points_in_FOV
         return self.make_ros_cloud(stamp)
 
     def generate_cloud_semantic_bayesian(

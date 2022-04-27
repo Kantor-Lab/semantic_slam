@@ -31,6 +31,20 @@ import matplotlib.pyplot as plt
 import torch
 
 
+def remap_classes_bool_indexing(
+    input_classes: np.array, remap: np.array, background_value: int = 7
+):
+    """Change indices based on input
+
+    https://stackoverflow.com/questions/3403973/fast-replacement-of-values-in-a-numpy-array
+    """
+    output = np.ones_like(input_classes) * background_value
+    for i, v in enumerate(remap):
+        mask = input_classes == i
+        output[mask] = v
+    return output
+
+
 def color_map(N=256, normalized=False):
     """
     Return Color Map in PASCAL VOC format (rgb)
@@ -144,8 +158,10 @@ class SemanticCloud:
             model_path = rospy.get_param("/semantic_pcl/model_path")
             config_path = rospy.get_param("/semantic_pcl/config_path")
             device = rospy.get_param("/device")
+            self.remap = np.asarray(rospy.get_param("/semantic_pcl/class_remap"))
+            self.num_classes = np.asarray(rospy.get_param("/semantic_pcl/num_classes"))
             print("Setting up CNN model...")
-            self.model = init_segmentor(config_path, model_path, device=device)
+            self.model = init_segmentor(config_path, model_path, device=device,)
             # End my version
 
         # Declare array containers
@@ -272,6 +288,7 @@ class SemanticCloud:
             anti_aliasing=True,
             preserve_range=True,
         )
+
         cv2.imshow("Camera image", color_img)
         cv2.imshow("confidence", confidence)
         cv2.imshow("Semantic segmantation", decoded)
@@ -354,6 +371,10 @@ class SemanticCloud:
         # class_probs.max(1)
         pred_confidence = np.max(class_probs, axis=2)
         pred_label = np.argmax(class_probs, axis=2)
+
+        if self.remap is not None:
+            pred_label = remap_classes_bool_indexing(pred_label, self.remap)
+
         # pred_confidence = pred_confidence.squeeze(0).cpu().numpy()
         # pred_label = pred_label.squeeze(0).cpu().numpy()
         pred_label = resize(
@@ -446,6 +467,7 @@ class SemanticCloud:
 
         if rotate_180:
             outputs = np.flip(outputs, axis=(0, 1))
+
         return outputs
 
 
