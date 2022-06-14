@@ -222,9 +222,16 @@ class SemanticCloud:
             )  # Take in one color image and one depth image with a limite time gap between message time stamps
             # TODO assume figure out if we can ever expect to deal with changing intrinsics
             self.ts.registerCallback(self.color_lidar_callback)
+            include_background = rospy.get_param("/semantic_pcl/include_background")
+
             # TODO Consider if something alterative to this needs to be added
             self.cloud_generator = ColorPclGenerator(
-                intrinsic, self.img_width, self.img_height, frame_id, self.point_type
+                intrinsic,
+                self.img_width,
+                self.img_height,
+                frame_id,
+                self.point_type,
+                include_background=include_background,
             )
         else:
             self.image_sub = rospy.Subscriber(

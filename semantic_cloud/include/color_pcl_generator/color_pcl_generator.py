@@ -102,6 +102,7 @@ class ColorPclGenerator:
         height=480,
         frame_id="/camera_rgb_optical_frame",
         point_type=PointType.SEMANTICS_BAYESIAN,
+        include_background=False,
     ):
         """
         width: (int) width of input images
@@ -109,6 +110,7 @@ class ColorPclGenerator:
         """
         self.point_type = point_type
         self.intrinsic = intrinsic
+        self.include_background = include_background
         self.num_semantic_colors = (
             3  # Number of semantic colors to be sent in the message
         )
@@ -417,7 +419,7 @@ class ColorPclGenerator:
         # Concatenate data
         self.ros_data[:num_points_in_FOV, 5:6] = self.semantic_color_vect.view("<f4")
         self.ros_data[:num_points_in_FOV, 6] = confidence
-        if False:
+        if self.include_background:
             num_unlabeled = self.ros_data.shape[0] - num_points_in_FOV
             unlabeled_semantic_color = np.ones((num_unlabeled, 4), dtype=np.uint8) * 255
             self.ros_data[num_points_in_FOV:, 5:6] = unlabeled_semantic_color.view(

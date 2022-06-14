@@ -11,3 +11,4 @@ octomap:
     prob_hit: 0.7
     prob_miss: 0.4
     save_path : "/home/frc-ag-1/Downloads/map.ot"
+    output_filename: "/home/frc-ag-1/experiments/octomap_outputs/45_degree_bag1.csv"

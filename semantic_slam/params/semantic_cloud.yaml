@@ -21,11 +21,12 @@ semantic_pcl:
   lidar_topic: "/velodyne_points"
   point_type: 1
   frame_id: "/lidar_link"
-  dataset: "ade20k" # sunrgbd
+  dataset: "ade20k" 
   #dataset: "sunrgbd" # sunrgbd
   model_path: /home/frc-ag-1/dev/mmsegmentation/work_dirs/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/iter_160000.pth
   config_path: "/home/frc-ag-1/dev/mmsegmentation/work_dirs/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes.py"
-  num_classes: 8
-  class_remap: [7, 1, 3, 7, 2, 0, 5, 1, 0, 0]
+  num_classes: 8 # Total number of classes
+  class_remap: [7, 1, 3, 7, 2, 0, 5, 1, 0, 0] # Remap the ith class to the class_remap[i] class
+  include_background: false # Whether to include a background class for all unobserved classes
 
 device: "cuda:0"

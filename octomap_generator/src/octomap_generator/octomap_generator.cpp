@@ -8,7 +8,10 @@
 #include <cstring> // For std::memcpy
 
 template <class CLOUD, class OCTREE>
-OctomapGenerator<CLOUD, OCTREE>::OctomapGenerator() : octomap_(0.05), max_range_(1.), raycast_range_(1.) {}
+OctomapGenerator<CLOUD, OCTREE>::OctomapGenerator() : octomap_(0.05), max_range_(1.), raycast_range_(1.), output_filename_("semantic_cloud.csv") {}
+
+template <class CLOUD, class OCTREE>
+OctomapGenerator<CLOUD, OCTREE>::OctomapGenerator(std::string output_filename) : octomap_(0.05), max_range_(1.), raycast_range_(1.), output_filename_(output_filename) {}
 
 template <class CLOUD, class OCTREE>
 OctomapGenerator<CLOUD, OCTREE>::~OctomapGenerator() {}
@@ -46,12 +49,12 @@ void OctomapGenerator<CLOUD, OCTREE>::insertPointCloud(const pcl::PCLPointCloud2
   // Convert to PCL pointcloud
   CLOUD pcl_cloud;
   pcl::fromPCLPointCloud2(*cloud_filtered, pcl_cloud);
-  //std::cout << "Voxel filtered cloud size: "<< pcl_cloud.size() << std::endl;
-  // Transform coordinate
+  // std::cout << "Voxel filtered cloud size: "<< pcl_cloud.size() << std::endl;
+  //  Transform coordinate
   pcl::transformPointCloud(pcl_cloud, pcl_cloud, sensorToWorld);
 
-  //tf::Vector3 originTf = sensorToWorldTf.getOrigin();
-  //octomap::point3d origin(originTf[0], originTf[1], originTf[2]);
+  // tf::Vector3 originTf = sensorToWorldTf.getOrigin();
+  // octomap::point3d origin(originTf[0], originTf[1], originTf[2]);
   octomap::point3d origin(static_cast<float>(sensorToWorld(0, 3)), static_cast<float>(sensorToWorld(1, 3)), static_cast<float>(sensorToWorld(2, 3)));
   octomap::Pointcloud raycast_cloud; // Point cloud to be inserted with ray casting
   int endpoint_count = 0;            // total number of endpoints inserted
@@ -101,8 +104,8 @@ void OctomapGenerator<PCLColor, ColorOcTree>::updateColorAndSemantics(PCLColor *
     }
   }
   octomap::ColorOcTreeNode *node = octomap_.search(pcl_cloud->begin()->x, pcl_cloud->begin()->y, pcl_cloud->begin()->z);
-  //std::cout << "Example octree node: " << std::endl;
-  //std::cout << "Color: " << node->getColor()<< std::endl;
+  // std::cout << "Example octree node: " << std::endl;
+  // std::cout << "Color: " << node->getColor()<< std::endl;
 }
 
 template <>
@@ -126,7 +129,7 @@ void OctomapGenerator<PCLSemanticsMax, SemanticsOctreeMax>::updateColorAndSemant
   }
 
   std::ofstream outfile;
-  outfile.open("/home/frc-ag-1/experiments/octomap_outputs/example.txt");
+  outfile.open(output_filename_);
   outfile << "x, y, z, color_r, color_g, color_b, semantic_r, semantic_g, semantic_b, semantic_conf" << std::endl;
   auto end = octomap_.end_leafs();
   for (auto it = octomap_.begin_leafs();
@@ -182,9 +185,9 @@ void OctomapGenerator<PCLSemanticsBayesian, SemanticsOctreeBayesian>::updateColo
   {
     SemanticsOcTreeNodeBayesian *node = octomap_.search(pcl_cloud->begin()->x, pcl_cloud->begin()->y, pcl_cloud->begin()->z);
   }
-  //std::cout << "Example octree node: " << std::endl;
-  //std::cout << "Color: " << node->getColor()<< std::endl;
-  //std::cout << "Semantics: " << node->getSemantics() << std::endl;
+  // std::cout << "Example octree node: " << std::endl;
+  // std::cout << "Color: " << node->getColor()<< std::endl;
+  // std::cout << "Semantics: " << node->getSemantics() << std::endl;
 }
 
 template <class CLOUD, class OCTREE>
@@ -198,20 +201,20 @@ bool OctomapGenerator<CLOUD, OCTREE>::save(const char *filename) const
     outfile.close();
     std::cout << "Color tree written " << filename << std::endl;
 
-    //auto end = octomap_.end_leafs();
-    //for (auto it = octomap_.begin_leafs();
-    //     it != end;
-    //     ++it)
+    // auto end = octomap_.end_leafs();
+    // for (auto it = octomap_.begin_leafs();
+    //      it != end;
+    //      ++it)
     //{
-    //  auto coord = it.getCoordinate();
-    //  auto *node = octomap_.search(coord.x(), coord.y(), coord.z());
-    //  //manipulate node, e.g.:
-    //  std::cout << "Node center: " << it.getCoordinate() << std::endl;
-    //  std::cout << "Node size: " << it.getSize() << std::endl;
-    //  std::cout << "Node color: " << it->getColor() << std::endl;
-    //  std::cout << "Node value: " << it->getValue() << std::endl;
-    //  std::cout << "Node semantics: " << node->getSemantics() << std::endl;
-    //}
+    //   auto coord = it.getCoordinate();
+    //   auto *node = octomap_.search(coord.x(), coord.y(), coord.z());
+    //   //manipulate node, e.g.:
+    //   std::cout << "Node center: " << it.getCoordinate() << std::endl;
+    //   std::cout << "Node size: " << it.getSize() << std::endl;
+    //   std::cout << "Node color: " << it->getColor() << std::endl;
+    //   std::cout << "Node value: " << it->getValue() << std::endl;
+    //   std::cout << "Node semantics: " << node->getSemantics() << std::endl;
+    // }
 
     return true;
   }
@@ -222,7 +225,7 @@ bool OctomapGenerator<CLOUD, OCTREE>::save(const char *filename) const
   }
 }
 
-//Explicit template instantiation
+// Explicit template instantiation
 template class OctomapGenerator<PCLColor, ColorOcTree>;
 template class OctomapGenerator<PCLSemanticsMax, SemanticsOctreeMax>;
 template class OctomapGenerator<PCLSemanticsBayesian, SemanticsOctreeBayesian>;

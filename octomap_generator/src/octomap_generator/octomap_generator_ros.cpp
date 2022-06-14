@@ -10,18 +10,19 @@
 OctomapGeneratorNode::OctomapGeneratorNode(ros::NodeHandle &nh) : nh_(nh)
 {
   nh_.getParam("/octomap/tree_type", tree_type_);
+  nh_.getParam("/octomap/output_filename", output_filename_);
   // Initiate octree
   if (tree_type_ == SEMANTICS_OCTREE_BAYESIAN || tree_type_ == SEMANTICS_OCTREE_MAX)
   {
     if (tree_type_ == SEMANTICS_OCTREE_BAYESIAN)
     {
       ROS_INFO("Semantic octomap generator [bayesian fusion]");
-      octomap_generator_ = new OctomapGenerator<PCLSemanticsBayesian, SemanticsOctreeBayesian>();
+      octomap_generator_ = new OctomapGenerator<PCLSemanticsBayesian, SemanticsOctreeBayesian>(output_filename_);
     }
     else
     {
       ROS_INFO("Semantic octomap generator [max fusion]");
-      octomap_generator_ = new OctomapGenerator<PCLSemanticsMax, SemanticsOctreeMax>();
+      octomap_generator_ = new OctomapGenerator<PCLSemanticsMax, SemanticsOctreeMax>(output_filename_);
     }
     service_ = nh_.advertiseService("toggle_use_semantic_color", &OctomapGeneratorNode::toggleUseSemanticColor, this);
   }
