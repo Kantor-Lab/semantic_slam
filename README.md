@@ -14,7 +14,7 @@ Now we need to set up a conda environment containing the dependencies. The sugge
 conda env create -f mmseg-ros-environment.yml -n semantic_slam 
 conda activate semantic_slam 
 ```
-Now we need to install `mmsegmentation` from my fork. Clone the repo from [my fork](git@github.com:russelldj/mmsegmentation.git), which contains a modification to return the confidence values. Now `cd` to that directory and with the conda environment activated, `pip install -e .` to install the project into the conda environment.
+Now we need to install `mmsegmentation` from my fork. Clone the repo from [my fork](https://github.com/russelldj/mmsegmentation), which contains a modification to return the confidence values. Now `cd` to that directory and with the conda environment activated, `pip install -e .` to install the project into the conda environment.
 
 Update model paths in `semantic_slam/params/semantic_cloud.yaml` to point to the trained model from [here](https://github.com/fyandun/SafeForest/tree/main/data/models).
 Download the [ros bag](https://drive.google.com/file/d/1fvlerB5mmBoTpVeji7noYaOWlfmmDmXf/view?usp=sharing) which contains containing lidar, images, and precomputed pose. Finally, run `roslaunch semantic_slam semantic_mapping.launch`.
