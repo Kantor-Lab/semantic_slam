@@ -16,7 +16,7 @@ conda activate semantic_slam
 ```
 Now we need to install `mmcv` with pip. I have not been able to successfully install the correct versionusing the conda env file so it must be done manually with the following command.
 ```
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.10.0/index.html
+pip install mmcv-full==1.4.0 -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.10.0/index.html
 ```
 This works correctly with the version of CUDA and PyTorch included in the conda env. If you are using different versions, refer to the general `mmcv` [installation guidelines](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). 
 
