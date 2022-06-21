@@ -14,6 +14,12 @@ Now we need to set up a conda environment containing the dependencies. The sugge
 conda env create -f mmseg-ros-environment.yml -n semantic_slam 
 conda activate semantic_slam 
 ```
+Now we need to install `mmcv` with pip. I have not been able to successfully install the correct versionusing the conda env file so it must be done manually with the following command.
+```
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.10.0/index.html
+```
+This works correctly with the version of CUDA and PyTorch included in the conda env. If you are using different versions, refer to the general `mmcv` [installation guidelines](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). 
+
 Now we need to install `mmsegmentation` from my fork. Clone the repo from [my fork](https://github.com/russelldj/mmsegmentation), which contains a modification to return the confidence values. Now `cd` to that directory and with the conda environment activated, `pip install -e .` to install the project into the conda environment.
 
 Update model paths in `semantic_slam/params/semantic_cloud.yaml` to point to the trained model from [here](https://github.com/fyandun/SafeForest/tree/main/data/models).
