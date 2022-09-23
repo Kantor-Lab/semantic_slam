@@ -40,4 +40,8 @@ RUN conda init bash
 SHELL ["conda", "run", "-n", "semantic_slam", "/bin/bash", "-c"]
 RUN pip install mmcv-full==1.4.0 -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.10.0/index.html
 RUN cd ~/dev/mmsegmentation &&  pip install -e .
+# TODO reorder
+RUN apt install tmux
+# TODO reorder
+RUN cd ~/catkin_ws/src && git clone https://github.com/OctoMap/octomap_rviz_plugins.git
 #RUN conda activate semantic_slam

@@ -25,6 +25,9 @@ Now we need to install `mmsegmentation` from my fork. Clone the repo from [my fo
 Update model paths in `semantic_slam/params/semantic_cloud.yaml` to point to the trained model from [here](https://github.com/fyandun/SafeForest/tree/main/data/models).
 Download the [ros bag](https://drive.google.com/file/d/1fvlerB5mmBoTpVeji7noYaOWlfmmDmXf/view?usp=sharing) which contains containing lidar, images, and precomputed pose. Finally, run `roslaunch semantic_slam semantic_mapping.launch`.
 
+## Docker install
+Alternatively, you can install the docker container. You'll need nvidia docker set up. Then you can run `build_docker.sh` and `run_docker.sh`. Then you can place models and bags in the data folder and they will show up mounted in the `~/data` directory of the container. Inside of the container `conda activate semantic_slam` and `cd ~/catkin_ws` and then you can run things as normal. 
+
 # Modifications (David Russell)
 `semantic_cloud/include/color_pcl_generator/color_pcl_generator.py` now optionally takes in a point cloud and textures it.
 
