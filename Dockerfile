@@ -17,7 +17,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update
 
 RUN apt install git vim tmux -y
-RUN apt install ros-melodic-octomap ros-melodic-octomap-msgs 
+RUN apt install ros-melodic-octomap ros-melodic-octomap-msgs -y
 ##ros-kinetic-octomap-mapping ros-kinetic-octomap-ros -y
 #
 RUN cd ~ && mkdir catkin_ws && cd catkin_ws && mkdir src && source /opt/ros/melodic/setup.bash && catkin_make
