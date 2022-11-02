@@ -16,13 +16,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Update Ubuntu Software repository
 RUN apt update
 
-RUN apt install git vim -y
+RUN apt install git vim tmux -y
 RUN apt install ros-melodic-octomap ros-melodic-octomap-msgs 
 ##ros-kinetic-octomap-mapping ros-kinetic-octomap-ros -y
 #
 RUN cd ~ && mkdir catkin_ws && cd catkin_ws && mkdir src && source /opt/ros/melodic/setup.bash && catkin_make
 RUN cd ~/catkin_ws/src && git clone https://github.com/eric-wieser/ros_numpy.git && git clone https://github.com/Kantor-Lab/semantic_slam.git
 RUN cd ~/catkin_ws && source /opt/ros/melodic/setup.bash  && source devel/setup.sh && catkin_make
+RUN cd ~/catkin_ws/src && git clone https://github.com/OctoMap/octomap_rviz_plugins.git
 
 RUN apt install wget 
 # Install miniconda
@@ -40,9 +41,5 @@ RUN conda init bash
 SHELL ["conda", "run", "-n", "semantic_slam", "/bin/bash", "-c"]
 RUN pip install mmcv-full==1.4.0 -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.10.0/index.html
 RUN cd ~/dev/mmsegmentation &&  pip install -e .
-# TODO reorder
-RUN apt install tmux -y
-# TODO reorder
-RUN cd ~/catkin_ws/src && git clone https://github.com/OctoMap/octomap_rviz_plugins.git
 RUN cd ~/catkin_ws && source /opt/ros/melodic/setup.bash  && source devel/setup.sh && catkin_make
 #RUN conda activate semantic_slam
