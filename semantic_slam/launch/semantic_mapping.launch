@@ -18,7 +18,11 @@
 <!--static tranform-->
 <node pkg="tf" type="static_transform_publisher" name="map_world" args="0 0 0 0 0 0 1 /world /map  100"/>
 
-<!--Specific to our system, not generalizable-->
-<include file="$(find semantic_slam)/launch/img_proc.launch"/>
+<!--static tranform-->
+<node pkg="tf" type="static_transform_publisher" name="lidar" args="0 0 0 0 0 0 1 /lidar_link /velodyne  100"/>
+
+<!--Specific to our system, not generalizable. Choose one of the below based on your payload-->
+<include file="$(find semantic_slam)/launch/img_proc_new.launch"/>
+<!--<include file="$(find semantic_slam)/launch/img_proc_old.launch"/>-->
 
 </launch>

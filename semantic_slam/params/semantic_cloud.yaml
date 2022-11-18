@@ -16,15 +16,15 @@ camera:
                 [0.9999154696277387, 0.011159670052216651, 0.006671983473049095, -0.08596729148558155],
                 [0.0, 0.0, 0.0, 1.0]]"
 semantic_pcl:
-  color_image_topic: "/mapping/left/image_color" #"/camera/rgb/image_raw"
+  color_image_topic: "/left/camera/image_color" #"/camera/rgb/image_raw"
   depth_image_topic: "/camera/depth_registered/image_raw"
   lidar_topic: "/velodyne_points"
   point_type: 1
   frame_id: "/lidar_link"
   dataset: "ade20k" 
   #dataset: "sunrgbd" # sunrgbd
-  model_path: "/root/data/bags/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/iter_160000.pth"
-  config_path: "/root/data/bags/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes.py"
+  model_path: "/root/data/bags/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/iter_160000.pth"
+  config_path: "/root/data/bags/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes.py"
   num_classes: 8 # Total number of classes
   class_remap: [7, 1, 3, 7, 2, 0, 5, 1, 0, 0] # Remap the ith class to the class_remap[i] class
   include_background: false # Whether to include a background class for all unobserved classes
