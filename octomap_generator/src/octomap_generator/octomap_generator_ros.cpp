@@ -34,6 +34,7 @@ OctomapGeneratorNode::OctomapGeneratorNode(ros::NodeHandle &nh) : nh_(nh)
   reset();
   fullmap_pub_ = nh_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
   pointcloud_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh_, pointcloud_topic_, 5);
+  pcl_save = nh_.subscribe<sensor_msgs::PointCloud2>(pointcloud_topic_, 5, &OctomapGeneratorNode::pclsaveCallback, this);
   tf_pointcloud_sub_ = new tf::MessageFilter<sensor_msgs::PointCloud2>(*pointcloud_sub_, tf_listener_, world_frame_id_, 5);
   tf_pointcloud_sub_->registerCallback(boost::bind(&OctomapGeneratorNode::insertCloudCallback, this, _1));
 }
@@ -105,6 +106,20 @@ void OctomapGeneratorNode::insertCloudCallback(const sensor_msgs::PointCloud2::C
     fullmap_pub_.publish(map_msg_);
   else
     ROS_ERROR("Error serializing OctoMap");
+}
+
+void OctomapGeneratorNode::pclsaveCallback(const sensor_msgs::PointCloud2::ConstPtr &cloud_msg)
+{
+  pcl::PCLPointCloud2::Ptr cloud(new pcl::PCLPointCloud2());
+  pcl_conversions::toPCL(*cloud_msg, *cloud);
+
+  ros::Time stamp = cloud_msg->header.stamp;
+  std::stringstream ss;
+  ss << stamp.sec << "." << stamp.nsec;
+
+  // std::string file_name = "/home/frc-ag-2/Desktop/merged/test_2/processed_pcl/testp_" + ss.str() + ".pcd";
+  // pcl::io::savePCDFile(file_name, *cloud);
+  // std::cerr << "Saved data points to" << file_name << std::endl;
 }
 
 bool OctomapGeneratorNode::save(const char *filename) const
