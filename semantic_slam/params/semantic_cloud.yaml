@@ -2,29 +2,72 @@
 camera:
   # TODO these parameters should be taken directly from the /mapping/left/camera_info channel
   intrinsic_topic: /mapping/left/camera_info # Currently unused
-  fx: 1458.20218
-  fy: 1460.09074
-  cx: 684.44996
-  cy: 538.93562
+  # intrinsic_topic: /left/camera/camera_info # added, for new payload
+  # intrinsic_topic: /mapping/left/camera_info # old payload
 
-  width: 1384
-  height: 1032
+  fx: 1458.20218 # old payload
+  fy: 1460.09074 # old payload
+  cx: 684.44996 # old payload
+  cy: 538.93562 # old payload
+
+  width: 1384  # old payload
+  height: 1032 # old payload
+
+  # fx: 3153.3548102242053 # new payload cam0 from full_frame_merged-camchain-imucam.yaml
+  # fy: 3156.8246857953686 # new payload cam0 from full_frame_merged-camchain-imucam.yaml
+  # cx: 1526.224661207172 # new payload cam0 from full_frame_merged-camchain-imucam.yaml
+  # cy: 1550.987933348246 # new payload cam0 from full_frame_merged-camchain-imucam.yaml
+
+  # fx: 3134.9225815898417 # new payload cam1 from full_frame_merged-camchain-imucam.yaml
+  # fy: 3136.3178132070816 # new payload cam1 from full_frame_merged-camchain-imucam.yaml
+  # cx: 1551.8246157491467 # new payload cam1 from full_frame_merged-camchain-imucam.yaml
+  # cy: 1525.753309658798 # new payload cam1 from full_frame_merged-camchain-imucam.yaml
+
+  # width: 1384  
+  # height: 1032 
+
   # Note, you can't have a trailing period for a zero, ex. 0.
   # TODO While these appear approximately correct, they should be validated.
+  
+  # # Added for new payload (cam0)
+  # extrinsics: "[[-0.053090464973663122462, 0.99854840115413642374, -0.0090309553376836898193, 0.1182083514751753],
+  #               [-0.006560794708958170031, 0.0086947214826623646743, 0.99994017952404794972, 0.0553722126932697],
+  #               [0.9985678455511443476, 0.05314652248359284042, 0.0060896673435100674012, -0.1544434391424575],
+  #               [0.0, 0.0, 0.0, 1.0]]"
+
+  # Added for new payload (cam1)
+  # extrinsics: "[[-0.039282378945386896348, 0.9992232987130046115, 0.0029593445364153815842, -0.13726772399718523],
+  #               [-0.0065854373635446862532, -0.00322045644656693173, 0.99997263237636014596, 0.054229647728904304],
+  #               [0.99920614008627326658, 0.039261793777410227861, 0.0067068328933349545489, -0.16341737154064478],
+  #               [0.0, 0.0, 0.0, 1.0]]"
+
+  # original
   extrinsics: "[[0.011095433907303122, -0.9998924705995739, 0.009588461017753862, -0.10873209971588892],
                 [0.006778270099933202, -0.009513621949918713, -0.9999317706983044, 0.016424135466818448],
                 [0.9999154696277387, 0.011159670052216651, 0.006671983473049095, -0.08596729148558155],
                 [0.0, 0.0, 0.0, 1.0]]"
+  #   T_cam_imu:
+  # - [-0.99998569330517, 0.0049197739095669015, -0.00209976419080755, 0.1182083514751753]
+  # - [-0.002134472512626063, -0.007060263954729037, 0.9999727979800161, 0.0553722126932697]
+  # - [0.004904815192348908, 0.9999629735633055, 0.0070706640678654875, -0.1544434391424575]
+  # - [0.0, 0.0, 0.0, 1.0]
+
+# imu to lidar transformation
+# 0.0580015    -0.998292     0.00692635         0
+# 0.998316     0.0579958    -0.00101483         0
+# 0.000611399  0.00697355    0.999975           0
+#           0           0           0           1
 semantic_pcl:
   color_image_topic: "/mapping/left/image_color" #"/camera/rgb/image_raw"
-  depth_image_topic: "/camera/depth_registered/image_raw"
+  # color_image_topic: "/left/camera/image_color" # added, new payload
+  # depth_image_topic: "/camera/depth_registered/image_raw" # not used
   lidar_topic: "/velodyne_points"
   point_type: 1
-  frame_id: "/lidar_link"
+  frame_id: "/lidar_link" 
   dataset: "ade20k" 
   #dataset: "sunrgbd" # sunrgbd
-  model_path: "/root/data/bags/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/iter_160000.pth"
-  config_path: "/root/data/bags/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes.py"
+  model_path: "/home/frc-ag-2/Kantor_Lab/SafeForest/docker_semantic_mapping/ws/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/iter_160000.pth"
+  config_path: "/home/frc-ag-2/Kantor_Lab/SafeForest/docker_semantic_mapping/ws/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes/segformer_mit-b5_512x512_160k_semfire_sete_4_22_12_21_all_classes.py"
   num_classes: 8 # Total number of classes
   class_remap: [7, 1, 3, 7, 2, 0, 5, 1, 0, 0] # Remap the ith class to the class_remap[i] class
   include_background: false # Whether to include a background class for all unobserved classes
