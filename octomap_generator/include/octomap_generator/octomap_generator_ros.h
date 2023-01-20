@@ -50,12 +50,15 @@ public:
    */
   bool save(const char *filename) const;
 
+  void pclsaveCallback(const sensor_msgs::PointCloud2::ConstPtr &cloud_msg);
+
 protected:
   OctomapGeneratorBase *octomap_generator_;                                                            ///< Octomap instance pointer
   ros::ServiceServer service_;                                                                         ///< ROS service to toggle semantic color display
   bool toggleUseSemanticColor(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response); ///< Function to toggle whether write semantic color or rgb color as when serializing octree
   ros::NodeHandle nh_;                                                                                 ///< ROS handler
   ros::Publisher fullmap_pub_;                                                                         ///< ROS publisher for octomap message
+  ros::Subscriber pcl_save; //added
   message_filters::Subscriber<sensor_msgs::PointCloud2> *pointcloud_sub_;                              ///< ROS subscriber for pointcloud message
   tf::MessageFilter<sensor_msgs::PointCloud2> *tf_pointcloud_sub_;                                     ///< ROS tf message filter to sychronize the tf and pointcloud messages
   tf::TransformListener tf_listener_;                                                                  ///< Listener for the transform between the camera and the world coordinates
